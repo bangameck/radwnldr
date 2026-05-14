@@ -931,10 +931,12 @@ class _YoutubeScreenState extends State<YoutubeScreen>
                                           // Tombol Lihat Folder (Hanya Muncul Jika Sukses)
                                           if (isDone)
                                             InkWell(
-                                              onTap: () =>
-                                                  queueProvider.openFolder(
-                                                    task.saveDirectory,
-                                                  ),
+                                              onTap: () {
+                                                final appProv = Provider.of<AppProvider>(context, listen: false);
+                                                queueProvider.openFolder(
+                                                  task.isAudio ? appProv.audioPath : appProv.videoPath,
+                                                );
+                                              },
                                               borderRadius:
                                                   BorderRadius.circular(8),
                                               child: Container(

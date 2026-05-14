@@ -182,6 +182,10 @@ class AppDrawer extends StatelessWidget {
           // ==========================================
           // 3. FOOTER (SETTINGS, ABOUT, PRIVACY)
           // ==========================================
+          _buildFooterMenu(context, 'Tutorial Penggunaan', Icons.menu_book_rounded, () {
+            Navigator.pop(context);
+            _showTutorialModal(context);
+          }),
           _buildFooterMenu(context, 'Tentang Aplikasi', Icons.info_outline_rounded, () {
             Navigator.pop(context);
             _showAboutModal(context);
@@ -1171,6 +1175,114 @@ class AppDrawer extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ─── TUTORIAL MODAL ───────────────────────────────────────────
+  void _showTutorialModal(BuildContext context) {
+    final theme = Theme.of(context);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        height: MediaQuery.of(ctx).size.height * 0.88,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.menu_book_rounded,
+                      color: Colors.orange,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Tutorial Penggunaan',
+                        style: GoogleFonts.workSans(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      Text(
+                        'Panduan Mengunduh Media',
+                        style: GoogleFonts.workSans(
+                          fontSize: 13,
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Divider(color: theme.colorScheme.onSurface.withValues(alpha: 0.08)),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+                children: [
+                  _privacySection(
+                    theme,
+                    '1️⃣ Salin Tautan (Copy Link)',
+                    'Buka aplikasi YouTube resmi, cari video yang ingin Anda unduh, lalu klik tombol "Bagikan" dan pilih "Salin Tautan".',
+                  ),
+                  _privacySection(
+                    theme,
+                    '2️⃣ Tempel Tautan (Paste Link)',
+                    'Buka aplikasi RaDwnldr, masuk ke menu YouTube, dan tempel (paste) tautan tersebut ke dalam kolom pencarian di bagian atas layar.',
+                  ),
+                  _privacySection(
+                    theme,
+                    '3️⃣ Pilih Resolusi & Format',
+                    'Aplikasi akan memproses video dan menampilkan daftar resolusi. Anda dapat memilih mode "Video" (Resolusi HD/4K) atau "Audio" (MP3 Murni).',
+                  ),
+                  _privacySection(
+                    theme,
+                    '4️⃣ Proses Unduhan & Muxing',
+                    'Setelah tombol di-klik, file akan masuk ke daftar "Antrian". Untuk video beresolusi tinggi (1080p ke atas), aplikasi otomatis menggunakan teknologi Muxing FFmpeg untuk menggabungkan video beresolusi tinggi dengan audio.',
+                  ),
+                  _privacySection(
+                    theme,
+                    '⚠️ Peringatan Penting',
+                    'Selama proses Muxing (penggabungan), sangat disarankan untuk tidak menutup paksa (force close) aplikasi. Aplikasi ini memiliki fitur WakeLock yang mencegah HP Anda tertidur, sehingga aman diletakkan meskipun layar mati.',
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
