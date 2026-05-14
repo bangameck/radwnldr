@@ -1,24 +1,29 @@
-# RADEVANKA PROJECT PROPRIETARY LICENSE
+MIT License with Custom RadevankaProject Addendum
 
-Copyright (c) 2026 RadevankaProject / bangameck (Pekanbaru, Riau).
-All rights reserved.
+Copyright (c) 2026 RadevankaProject / bangameck
 
-1. **KEPEMILIKAN PENUH**
-   Aplikasi ini, termasuk namun tidak terbatas pada kode sumber (source code), desain antarmuka (UI/UX), aset grafis, dan logika sistem di dalamnya, adalah milik sah dari RadevankaProject / bangameck.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, subject to the following conditions:
 
-2. **DILARANG MENGKOMERSIALKAN**
-   Dilarang keras menjual, mendistribusikan ulang untuk keuntungan finansial, atau menyewakan aplikasi ini, baik dalam bentuk _source code_ maupun aplikasi yang sudah di-_compile_ (APK/AAB/IPA) tanpa persetujuan tertulis dari pemilik hak cipta.
+1. DIBOLEHKAN UNTUK DIKEMBANGKAN: Pengguna diperbolehkan untuk mengembangkan 
+   dan memodifikasi kode sumber ini ASALKAN mendapatkan izin tertulis terlebih 
+   dahulu dari RadevankaProject / bangameck sebagai pemilik resmi aset.
+2. ATRIBUSI WAJIB (CREDIT): Jika dikembangkan lebih lanjut, tidak diperbolehkan
+   menghilangkan credit (nama pengembang awal) RadevankaProject / bangameck 
+   pada aplikasi maupun _source code_.
+3. KONDISI MIT STANDAR: The above copyright notice and this permission notice 
+   shall be included in all copies or substantial portions of the Software.
 
-3. **DILARANG MENCURI ATAU MENGKLAIM**
-   Siapa pun tidak diizinkan untuk menghapus, mengubah, atau menyembunyikan identitas RadevankaProject / bangameck sebagai developer asli dari aplikasi ini. Dilarang mengklaim aplikasi ini sebagai karya milik pribadi atau entitas perusahaan lain.
-
-4. **PENGGUNAAN PRIBADI**
-   Aplikasi ini disediakan untuk digunakan secara mandiri dan di lingkungan pribadi/terbatas sebagaimana peruntukan awal saat diserahkan atau dibagikan.
-
-5. **TANPA JAMINAN (NO WARRANTY)**
-   Aplikasi ini disediakan "APA ADANYA", tanpa jaminan apa pun, baik tersurat maupun tersirat. Pengembang tidak bertanggung jawab atas segala kerusakan, kehilangan data, atau tuntutan hukum yang timbul dari penggunaan atau ketidakmampuan menggunakan aplikasi ini.
-
-Setiap pelanggaran terhadap ketentuan di atas dapat ditindak sesuai dengan peraturan perundang-undangan mengenai Hak Kekayaan Intelektual yang berlaku di Negara Kesatuan Republik Indonesia.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 ---
 **Developer:** @bangameck
