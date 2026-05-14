@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:video_player/video_player.dart';
-import '../widgets/app_drawer.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import '../widgets/app_drawer.dart'; // Pastikan nama file ini sesuai dan sudah di-save!
 import 'youtube_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -21,16 +24,15 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
 
-    // Trik Fake Loading Skeleton Premium
     Future.delayed(const Duration(milliseconds: 1200), () {
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
+        _checkWelcomeModal();
       }
     });
 
-    // Inisialisasi Video Background
     _videoController = VideoPlayerController.asset('assets/videos/banner.mp4')
       ..initialize()
           .then((_) {
@@ -52,6 +54,413 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _videoController.dispose();
     super.dispose();
+  }
+
+  // ==========================================
+  // LOGIKA MODAL WELCOME & TUTORIAL
+  // ==========================================
+  Future<void> _checkWelcomeModal() async {
+    final prefs = await SharedPreferences.getInstance();
+    bool hideModal = prefs.getBool('hideWelcomeModal') ?? false;
+
+    if (!hideModal && mounted) {
+      _showWelcomeDialog();
+    }
+  }
+
+  void _showWelcomeDialog() {
+    bool dontShowAgain = false;
+    final theme = Theme.of(context);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) {
+        // Menggunakan dialogCtx agar tidak bentrok
+        return StatefulBuilder(
+          builder: (innerContext, setStateBuilder) {
+            // innerContext khusus untuk state dalam dialog
+            return AlertDialog(
+              backgroundColor: theme.colorScheme.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
+              title: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline_rounded,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'Selamat Datang!',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'RaDwnldr adalah aplikasi pengunduh media premium dengan fitur Bypass dan Muxing berkecepatan tinggi.\n\nApakah Anda ingin melihat panduan cara menggunakannya terlebih dahulu?',
+                    style: TextStyle(fontSize: 14, height: 1.4),
+                  ),
+                  const SizedBox(height: 20),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: CheckboxListTile(
+                      value: dontShowAgain,
+                      activeColor: theme.colorScheme.primary,
+                      title: const Text(
+                        'Jangan tampilkan pesan ini lagi',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      controlAffinity: ListTileControlAffinity.leading,
+                      onChanged: (val) {
+                        setStateBuilder(() {
+                          dontShowAgain = val ?? false;
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              actionsAlignment: MainAxisAlignment.spaceBetween,
+              actions: [
+                TextButton(
+                  onPressed: () async {
+                    if (dontShowAgain) {
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setBool('hideWelcomeModal', true);
+                    }
+                    // Cek mounted menggunakan context milik dialog (innerContext)
+                    if (!innerContext.mounted) return;
+                    Navigator.pop(innerContext);
+                  },
+                  child: const Text(
+                    'Tutup',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () async {
+                    if (dontShowAgain) {
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setBool('hideWelcomeModal', true);
+                    }
+
+                    // 1. Tutup dialognya dulu
+                    if (!innerContext.mounted) return;
+                    Navigator.pop(innerContext);
+
+                    // 2. Buka tutorial menggunakan context utama (Screen)
+                    if (!mounted) return;
+                    _showTutorialModal(context);
+                  },
+                  icon: const Icon(Icons.menu_book_rounded, size: 18),
+                  label: const Text('Lihat Tutorial'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showTutorialModal(BuildContext context) {
+    final theme = Theme.of(context);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        height: MediaQuery.of(ctx).size.height * 0.88,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.menu_book_rounded,
+                      color: Colors.orange,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Tutorial Penggunaan',
+                        style: GoogleFonts.workSans(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      Text(
+                        'Panduan Mengunduh Media',
+                        style: GoogleFonts.workSans(
+                          fontSize: 13,
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Divider(color: theme.colorScheme.onSurface.withValues(alpha: 0.08)),
+            Expanded(
+              child: ListView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+                children: [
+                  _privacySection(
+                    theme,
+                    '1️⃣ Salin Tautan (Copy Link)',
+                    'Buka aplikasi YouTube resmi, cari video yang ingin Anda unduh, lalu klik tombol "Bagikan" dan pilih "Salin Tautan".',
+                  ),
+                  _privacySection(
+                    theme,
+                    '2️⃣ Tempel Tautan (Paste Link)',
+                    'Buka aplikasi RaDwnldr, masuk ke menu YouTube, dan tempel (paste) tautan tersebut ke dalam kolom pencarian di bagian atas layar.',
+                  ),
+                  _privacySection(
+                    theme,
+                    '3️⃣ Pilih Resolusi & Format',
+                    'Aplikasi akan memproses video dan menampilkan daftar resolusi. Anda dapat memilih mode "Video" (Resolusi HD/4K) atau "Audio" (MP3 Murni).',
+                  ),
+                  _privacySection(
+                    theme,
+                    '4️⃣ Proses Unduhan & Muxing',
+                    'Setelah tombol di-klik, file akan masuk ke daftar "Antrian". Untuk video beresolusi tinggi (1080p ke atas), aplikasi otomatis menggunakan teknologi Muxing FFmpeg untuk menggabungkan video resolusi tinggi dengan audio.',
+                  ),
+                  _privacySection(
+                    theme,
+                    '⚠️ Peringatan Penting',
+                    'Selama proses Muxing (penggabungan), sangat disarankan untuk tidak menutup paksa (force close) aplikasi. Aplikasi ini memiliki fitur WakeLock yang mencegah HP Anda tertidur, sehingga aman diletakkan meskipun layar mati.',
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showChangelogModal(BuildContext context, String version) {
+    final theme = Theme.of(context);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        height: MediaQuery.of(ctx).size.height * 0.65,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.history_rounded,
+                      color: theme.colorScheme.primary,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Changelog (Riwayat Update)',
+                        style: GoogleFonts.workSans(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      Text(
+                        'Versi saat ini: v$version',
+                        style: GoogleFonts.workSans(
+                          fontSize: 13,
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Divider(color: theme.colorScheme.onSurface.withValues(alpha: 0.08)),
+            Expanded(
+              child: ListView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+                children: [
+                  _changelogSection(theme, 'v1.0.0 (Pro Build)', [
+                    '🚀 Rilis Perdana RaDwnldr Premium Edition',
+                    '🛡️ Integrasi Bypass YouTube JS Challenge (Anti 403)',
+                    '⚡ Konversi Cepat Muxing FFmpeg untuk MP4 & MKV',
+                    '🔋 Fitur Native WakeLock & Download Latar Belakang',
+                    '🎨 UI Cinematic dengan Video Background & Glassmorphism',
+                    '📋 Sistem Antrian Pintar (Smart Queue)',
+                  ]),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _privacySection(ThemeData theme, String title, String description) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            description,
+            style: TextStyle(
+              fontSize: 14,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _changelogSection(
+    ThemeData theme,
+    String title,
+    List<String> changes,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ...changes.map(
+            (change) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '•',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      change,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.8,
+                        ),
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -89,12 +498,11 @@ class _HomeScreenState extends State<HomeScreen> {
       physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       children: [
-        // Skeleton Banner (Polos)
         Shimmer.fromColors(
           baseColor: baseColor,
           highlightColor: highlightColor,
           child: Container(
-            height: 200, // Diperbesar dikit biar makin cinematic
+            height: 200,
             width: double.infinity,
             decoration: BoxDecoration(
               color: Colors.white,
@@ -103,8 +511,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(height: 25),
-
-        // Skeleton Judul Premium yang dipindah ke luar
         Shimmer.fromColors(
           baseColor: baseColor,
           highlightColor: highlightColor,
@@ -133,8 +539,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(height: 30),
-
-        // Skeleton Grid
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -170,9 +574,8 @@ class _HomeScreenState extends State<HomeScreen> {
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.all(16),
       children: [
-        // --- BANNER UTAMA DENGAN VIDEO MP4 (KINI POLOS & LEBIH BESAR) ---
         Container(
-          height: 200, // Ditinggikan biar lebih memanjakan mata
+          height: 200,
           width: double.infinity,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(25),
@@ -209,8 +612,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                   ),
-
-                // Overlay tipis banget biar warna video tetep tajam tapi gak menyilaukan
                 Container(color: Colors.black.withValues(alpha: 0.1)),
               ],
             ),
@@ -218,7 +619,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 25),
 
-        // --- TEKS HEADER PREMIUM (DIPINDAH KE LUAR BANNER) ---
         ShaderMask(
           blendMode: BlendMode.srcIn,
           shaderCallback: (bounds) => LinearGradient(
@@ -247,7 +647,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 30),
 
-        // --- TEKS SUB-HEADER ---
         Row(
           children: [
             Container(
@@ -275,7 +674,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 15),
 
-        // --- GRID ACTION BUTTONS ---
         GridView.count(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -325,12 +723,76 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 20), // Ekstra padding di bawah
+
+        const SizedBox(height: 50),
+        Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
+              child: Text(
+                '"Build with logic. Secure with discipline. Deliver with pride."',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.workSans(
+                  fontSize: 10,
+                  color: Colors.grey.withValues(alpha: 0.6),
+                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            const SizedBox(height: 15),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'by ',
+                  style: GoogleFonts.workSans(
+                    fontSize: 11,
+                    color: Colors.grey.withValues(alpha: 0.8),
+                  ),
+                ),
+                Text(
+                  'RadevankaProject',
+                  style: GoogleFonts.workSans(
+                    fontSize: 11,
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: FutureBuilder<PackageInfo>(
+                future: PackageInfo.fromPlatform(),
+                builder: (context, snapshot) {
+                  final version = snapshot.data?.version ?? '1.0.0';
+                  return GestureDetector(
+                    onTap: () {
+                      _showChangelogModal(context, version);
+                    },
+                    child: Text(
+                      'v$version (Pro Build)',
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
 
-  // --- WIDGET CARD CUSTOM ---
   Widget _buildActionCard({
     required BuildContext context,
     required String title,
