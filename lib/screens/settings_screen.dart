@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
+import '../widgets/alert_premium.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -182,11 +183,9 @@ class SettingsScreen extends StatelessWidget {
                     ),
                     onPressed: () {
                       provider.clearCache();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Cache berhasil dibersihkan!'),
-                          backgroundColor: Colors.green,
-                        ),
+                      AlertPremium.showSuccess(
+                        context,
+                        'Cache berhasil dibersihkan!',
                       );
                     },
                     child: const Text('Clean'),

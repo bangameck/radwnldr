@@ -24,35 +24,30 @@ class MainActivity : FlutterActivity() {
           result.success(null)
         }
         "openFolder" -> {
-          // MENGAMBIL PATH DARI SETTING FLUTTER
           val path = call.argument<String>("path") ?: ""
 
           try {
-            // Pastikan direktori ada
             val dir = java.io.File(path)
             if (!dir.exists()) {
               dir.mkdirs()
             }
 
-            // Bypass StrictMode untuk mengizinkan file:// uri (menghindari FileUriExposedException)
-            val builder = android.os.StrictMode.VmPolicy.Builder()
-            android.os.StrictMode.setVmPolicy(builder.build())
-
-            // Coba buka folder secara spesifik
             val intent = android.content.Intent(android.content.Intent.ACTION_VIEW)
-            val uri = Uri.parse("file://$path")
-            intent.setDataAndType(uri, "resource/folder")
             intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 
-            if (intent.resolveActivity(packageManager) != null) {
-              startActivity(intent)
+            if (path.startsWith("/storage/emulated/0/")) {
+              val relativePath = path.removePrefix("/storage/emulated/0/")
+              val uri = Uri.parse("content://com.android.externalstorage.documents/document/primary:$relativePath")
+              intent.setDataAndType(uri, "vnd.android.document/directory")
             } else {
+              val builder = android.os.StrictMode.VmPolicy.Builder()
+              android.os.StrictMode.setVmPolicy(builder.build())
+              val uri = Uri.parse("file://$path")
               intent.setDataAndType(uri, "*/*")
-              startActivity(intent)
             }
+            
+            startActivity(intent)
           } catch (e: Exception) {
-            // Fallback: Jika File Manager HP tidak support direct-path, buka folder Downloads
-            // bawaan
             try {
               val fallbackIntent =
                       android.content.Intent(android.app.DownloadManager.ACTION_VIEW_DOWNLOADS)
