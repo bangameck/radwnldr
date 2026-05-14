@@ -1,0 +1,59 @@
+# RaDwnldr - Project Roadmap & TODO List
+
+## [PHASE 1] SETUP & ARSITEKTUR DASAR
+- [*] Inisialisasi Project Flutter: `flutter create radwnldr`
+- [*] Pembersihan `main.dart` dan Setup Folder (screens, widgets, services, models, themes)
+- [*] Install Dependencies (pubspec.yaml):
+    - youtube_explode_dart (Parser)
+    - ffmpeg_kit_flutter_full (Muxing & Conversion)
+    - dio / flutter_downloader (Download Engine)
+    - shared_preferences (Local Storage Config)
+    - path_provider & permission_handler (File Access)
+    - folder_picker (Target Storage Selection)
+- [*] Setup State Management (Provider/Riverpod/GetX)
+
+## [PHASE 2] THEMING & PENGATURAN (SETTINGS)
+- [*] Implementasi Theme Controller:
+    - Light Theme (Clean White/Grey)
+    - Dark Theme (Deep Navy Blue / Biru Tua)
+    - Premium Accent Themes (Emerald, Crimson, Amethyst)
+- [*] Pengaturan Font: Implementasi 'Work Sans' sebagai font utama aplikasi
+- [*] Halaman Settings:
+    - [*] UI Ganti Tema & Warna Aksen
+    - [*] Logic Folder Picker: Set Path Video (Default: /Download/RaDwnldr/Video)
+    - [*] Logic Folder Picker: Set Path Audio (Default: /Download/RaDwnldr/Audio)
+    - [*] Integrasi Shared Preferences untuk simpan pilihan user
+
+## [PHASE 3] CORE ENGINE (PARSER & EXTRACTION)
+- [*] YoutubeService.dart:
+    - [*] Fungsi fetch metadata (Judul, Thumbnail, Durasi)
+    - [*] Fungsi extract stream manifest (Daftar resolusi & bitrate audio)
+- [*] Logic Filter: Memisahkan Muxed Stream (<720p) dan Adaptive Stream (1080p++)
+- [*] Clipboard Observer: Auto-detect link video saat aplikasi dibuka
+
+## [PHASE 4] DOWNLOAD & FFMPEG PROCESSING
+- [*] DownloadService.dart:
+    - [*] Logic Download Manager (Progress tracking)
+    - [*] Handle Temporary Files (Pembersihan file mentah setelah proses selesai)
+- [*] Integrasi FFmpeg:
+    - [*] Muxing Video + Audio (untuk resolusi tinggi ke MP4/MKV)
+    - [*] Konversi Audio ke MP3 (Bitrate: 128k, 192k, 320k)
+- [*] Implementasi Scoped Storage: Memastikan file muncul di Galeri/Music Player
+
+## [PHASE 5] UI INTEGRATION (FRONT-END)
+- [ ] Home Screen: Input field + Link Preview Card
+- [ ] Download Dialog (BottomSheet):
+    - [ ] Tab Video: Pilihan Resolusi & Ekstensi (MP4, MKV)
+    - [ ] Tab Audio: Pilihan Kualitas (Low, Medium, High)
+- [ ] Queue Screen: List proses download yang sedang berjalan dengan progress bar
+
+## [PHASE 6] TESTING & POLISHING
+- [ ] Uji coba Android 11-14 Permission (Scoped Storage)
+- [ ] Optimasi Background Task (agar download tidak mati saat aplikasi di-minimize)
+- [ ] Final UI Polish: Animasi transisi & Premium feel
+- [ ] Tambahkan "About" screen yang menampilkan Copyright dan link ke Developer (Radevanka).
+
+
+Tips FFmpeg untuk MP3:
+Nanti saat kamu sampai di tahap audio, perintah FFmpeg di Dart-nya kira-kira akan seperti ini:
+"-i file_asli.webm -vn -ar 44100 -ac 2 -b:a 320k output.mp3" (Contoh untuk kualitas tinggi).
