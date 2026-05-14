@@ -809,10 +809,18 @@ class AppDrawer extends StatelessWidget {
                                 color: primary.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: Icon(
-                                Icons.person_rounded,
-                                size: 40,
-                                color: primary,
+                              child: Image.asset(
+                                'assets/images/radevanka-logo.png',
+                                width: 40,
+                                height: 40,
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Icon(
+                                    Icons.person_rounded,
+                                    size: 40,
+                                    color: primary,
+                                  );
+                                },
                               ),
                             ),
                             const SizedBox(width: 12),

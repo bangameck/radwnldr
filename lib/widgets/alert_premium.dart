@@ -7,6 +7,10 @@ class AlertPremium {
     final theme = Theme.of(context);
     late OverlayEntry entry;
 
+    final isDark = theme.brightness == Brightness.dark;
+    final bgColor = isDark ? Colors.white : const Color(0xFF1E1E1E);
+    final textColor = isDark ? Colors.black87 : Colors.white;
+
     entry = OverlayEntry(
       builder: (context) => Positioned(
         top: MediaQuery.of(context).padding.top + 10,
@@ -28,7 +32,7 @@ class AlertPremium {
                       vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest,
+                      color: bgColor,
                       borderRadius: BorderRadius.circular(
                         30,
                       ), // Pill shape ala Dynamic Island
@@ -53,7 +57,7 @@ class AlertPremium {
                           child: Text(
                             message,
                             style: TextStyle(
-                              color: theme.colorScheme.onSurface,
+                              color: textColor,
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
                             ),
