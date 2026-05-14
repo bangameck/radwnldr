@@ -97,7 +97,53 @@ flutter build apk --release
 
 ---
 
-## 👨💻 Dikembangkan Oleh
+## 📸 Screenshots
+
+<div align="center">
+
+| Home Screen | Side Menu | YouTube Downloader | Pengaturan |
+|:-----------:|:---------:|:-----------------:|:----------:|
+| ![Home](assets/screenshots/homepage.png) | ![Menu](assets/screenshots/menu.png) | ![YouTube](assets/screenshots/ytdownpage.png) | ![Settings](assets/screenshots/pengaturan.png) |
+
+</div>
+
+---
+
+## 📖 Tutorial Penggunaan
+
+### 1️⃣ Salin Tautan (Copy Link)
+Buka aplikasi **YouTube resmi**, cari video yang ingin Anda unduh, lalu klik tombol **"Bagikan"** → **"Salin Tautan"**.
+
+### 2️⃣ Tempel Tautan (Paste Link)
+Buka **RaDwnldr**, masuk ke menu **YouTube** melalui tombol navigasi. Tempel *(paste)* tautan tersebut ke dalam kolom pencarian di bagian atas layar, lalu tekan **Enter** atau ikon cari.
+
+### 3️⃣ Pilih Resolusi & Format
+Aplikasi akan memproses video dan menampilkan daftar resolusi yang tersedia. Pilih sesuai kebutuhan:
+
+| Mode | Pilihan | Keterangan |
+|------|---------|------------|
+| 🎥 **Video** | 360p, 720p, 1080p, 2K, 4K | HD/4K menggunakan FFmpeg Muxing otomatis |
+| 🎵 **Audio** | 128kbps, 192kbps, 320kbps | Download MP3 murni tanpa video |
+| 📦 **MKV** | 1080p+ | Proses super cepat (*Copy Codec*) |
+| 📱 **MP4** | 1080p+ | Re-encode standar layar mobile |
+
+### 4️⃣ Proses Unduhan & Muxing
+Setelah tombol di-klik, file akan masuk ke daftar **"Antrian"**. Untuk video beresolusi tinggi (1080p ke atas), aplikasi otomatis menggunakan teknologi **Muxing FFmpeg** untuk menggabungkan video beresolusi tinggi dengan audio secara *seamless*.
+
+### ⚠️ Peringatan Penting
+Selama proses **Muxing** (penggabungan), sangat disarankan untuk **tidak menutup paksa** *(force close)* aplikasi. Aplikasi ini memiliki fitur **WakeLock** yang mencegah HP Anda tertidur selama proses berlangsung — aman diletakkan meskipun layar mati.
+
+### 5️⃣ Buka Hasil Unduhan
+Setelah selesai, tekan ikon **folder** pada item di daftar antrian untuk langsung membuka folder penyimpanan:
+- 📁 Video disimpan di: `/storage/emulated/0/Movies/RaDwnldr/`
+- 🎵 Audio disimpan di: `/storage/emulated/0/Music/RaDwnldr/`
+
+> Lokasi folder dapat diubah kapan saja melalui menu **⚙️ Pengaturan → Storage Locations**.
+
+---
+
+## 👨‍💻 Dikembangkan Oleh
+
 
 **RadevankaProject**
 <br>
