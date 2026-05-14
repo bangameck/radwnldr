@@ -14,10 +14,11 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        isCoreLibraryDesugaringEnabled = false
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+        jvmTarget = "17"
     }
 
     defaultConfig {
@@ -35,6 +36,13 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("debug")
+            
+            // ========================================================
+            // OBAT JNI CRASH: MATIKAN MESIN PENGACAK R8/PROGUARD
+            // ========================================================
+            isMinifyEnabled = false
+            isShrinkResources = false
+            // ========================================================
         }
     }
 }

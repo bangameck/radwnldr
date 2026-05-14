@@ -23,7 +23,8 @@ void main() async {
     ),
   );
 
-  await AwesomeNotifications().initialize(null, [
+  // PERBAIKAN: GANTI null MENJADI 'resource://mipmap/ic_launcher'
+  await AwesomeNotifications().initialize('resource://mipmap/ic_launcher', [
     NotificationChannel(
       channelKey: 'download_channel',
       channelName: 'Progres Unduhan',

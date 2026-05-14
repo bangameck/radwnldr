@@ -1,26 +1,24 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Akses Internet untuk Download -->
     <uses-permission android:name="android.permission.INTERNET" />
-
-    <!-- Izin Membaca dan Menulis Penyimpanan -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
-    <!-- Izin Akses Penuh (Wajib untuk Android 11+ agar file bisa disimpan di sembarang folder) -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
 
-    <!-- ================= IZIN NOTIFIKASI & BACKGROUND (BARU) ================= -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <!-- ======================================================================= -->
 
     <application
         android:label="RaDwnldr"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:largeHeap="true"
+        android:extractNativeLibs="true">
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
