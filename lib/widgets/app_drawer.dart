@@ -6,6 +6,400 @@ import 'package:url_launcher/url_launcher.dart';
 import '../screens/settings_screen.dart';
 import '../screens/youtube_screen.dart';
 
+// ======================================================================
+// FUNGSI GLOBAL UNTUK MODAL (Bisa dipanggil dari mana saja)
+// ======================================================================
+
+void showChangelogModal(BuildContext context, String currentVersion) {
+  final theme = Theme.of(context);
+  final primary = theme.colorScheme.primary;
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) => Container(
+      height: MediaQuery.of(ctx).size.height * 0.85,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: primary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.new_releases_rounded,
+                    color: primary,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Apa yang Baru?',
+                      style: GoogleFonts.workSans(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    Text(
+                      'Riwayat Pembaruan RaDwnldr',
+                      style: GoogleFonts.workSans(
+                        fontSize: 13,
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Divider(color: theme.colorScheme.onSurface.withValues(alpha: 0.08)),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+              children: [
+                // --- VERSI 1.0.0 ---
+                _changelogVersion(
+                  theme,
+                  '1.0.0',
+                  '15 Mei 2026',
+                  isLatest: true,
+                  primary: primary,
+                  changes: [
+                    _clItem(
+                      theme,
+                      Icons.dashboard_rounded,
+                      'Smart Queue System',
+                      'Sistem antrian pintar dengan tampilan visual premium dan fitur auto-sorting.',
+                      Colors.blue,
+                    ),
+                    _clItem(
+                      theme,
+                      Icons.battery_charging_full_rounded,
+                      'Native WakeLock',
+                      'Mencegah CPU tertidur saat mengunduh atau melakukan muxing FFmpeg di latar belakang.',
+                      const Color(0xFF00FF9D),
+                    ),
+                    _clItem(
+                      theme,
+                      Icons.shield_rounded,
+                      'Bypass 403 Forbidden',
+                      'Client spoofing menggunakan iOS/VR signatures untuk menghindari pemblokiran YouTube.',
+                      Colors.orange,
+                    ),
+                    _clItem(
+                      theme,
+                      Icons.movie_creation_rounded,
+                      'FFmpeg Muxing',
+                      'Penggabungan otomatis video HD dan audio resolusi tinggi menggunakan library native.',
+                      Colors.purple,
+                    ),
+                    _clItem(
+                      theme,
+                      Icons.auto_awesome_rounded,
+                      'Premium UI',
+                      'Desain antarmuka eksklusif dengan efek Glassmorphism, Video Background, dan Skeleton Loading.',
+                      primary,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+void showTutorialModal(BuildContext context) {
+  final theme = Theme.of(context);
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) => Container(
+      height: MediaQuery.of(ctx).size.height * 0.88,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.menu_book_rounded,
+                    color: Colors.orange,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Tutorial Penggunaan',
+                      style: GoogleFonts.workSans(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    Text(
+                      'Panduan Mengunduh Media',
+                      style: GoogleFonts.workSans(
+                        fontSize: 13,
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Divider(color: theme.colorScheme.onSurface.withValues(alpha: 0.08)),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+              children: [
+                _privacySectionGlobal(
+                  theme,
+                  '1️⃣ Salin Tautan (Copy Link)',
+                  'Buka aplikasi YouTube resmi, cari video yang ingin Anda unduh, lalu klik tombol "Bagikan" dan pilih "Salin Tautan".',
+                ),
+                _privacySectionGlobal(
+                  theme,
+                  '2️⃣ Tempel Tautan (Paste Link)',
+                  'Buka aplikasi RaDwnldr, masuk ke menu YouTube, dan tempel (paste) tautan tersebut ke dalam kolom pencarian di bagian atas layar.',
+                ),
+                _privacySectionGlobal(
+                  theme,
+                  '3️⃣ Pilih Resolusi & Format',
+                  'Aplikasi akan memproses video dan menampilkan daftar resolusi. Anda dapat memilih mode "Video" (Resolusi HD/4K) atau "Audio" (MP3 Murni).',
+                ),
+                _privacySectionGlobal(
+                  theme,
+                  '4️⃣ Proses Unduhan & Muxing',
+                  'Setelah tombol di-klik, file akan masuk ke daftar "Antrian". Untuk video beresolusi tinggi (1080p ke atas), aplikasi otomatis menggunakan teknologi Muxing FFmpeg untuk menggabungkan video beresolusi tinggi dengan audio.',
+                ),
+                _privacySectionGlobal(
+                  theme,
+                  '⚠️ Peringatan Penting',
+                  'Selama proses Muxing (penggabungan), sangat disarankan untuk tidak menutup paksa (force close) aplikasi. Aplikasi ini memiliki fitur WakeLock yang mencegah HP Anda tertidur, sehingga aman diletakkan meskipun layar mati.',
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+// Helper Widget untuk Changelog Modal
+Widget _changelogVersion(
+  ThemeData theme,
+  String ver,
+  String date, {
+  required List<Widget> changes,
+  bool isLatest = false,
+  required Color primary,
+}) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: isLatest
+                  ? primary.withValues(alpha: 0.15)
+                  : theme.colorScheme.onSurface.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              'v$ver',
+              style: GoogleFonts.jetBrainsMono(
+                fontWeight: FontWeight.bold,
+                color: isLatest ? primary : theme.colorScheme.onSurface,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          if (isLatest) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: primary,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                'Terbaru',
+                style: GoogleFonts.jetBrainsMono(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  fontSize: 10,
+                ),
+              ),
+            ),
+          ],
+          const Spacer(),
+          Text(
+            date,
+            style: GoogleFonts.workSans(
+              fontSize: 12,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 12),
+      ...changes,
+    ],
+  );
+}
+
+// Helper Widget untuk Item Changelog
+Widget _clItem(
+  ThemeData theme,
+  IconData icon,
+  String title,
+  String desc,
+  Color color,
+) {
+  return Container(
+    margin: const EdgeInsets.only(bottom: 10),
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.06),
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: color.withValues(alpha: 0.12)),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.workSans(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                desc,
+                style: GoogleFonts.workSans(
+                  fontSize: 12,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+// Helper Widget untuk Privacy/Tutorial Section Global
+Widget _privacySectionGlobal(ThemeData theme, String title, String body) {
+  return Container(
+    margin: const EdgeInsets.only(bottom: 16),
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: theme.colorScheme.onSurface.withValues(alpha: 0.03),
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(
+        color: theme.colorScheme.onSurface.withValues(alpha: 0.06),
+      ),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.workSans(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          body,
+          style: GoogleFonts.workSans(
+            fontSize: 13,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+            height: 1.6,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+// ======================================================================
+// KELAS APP DRAWER UTAMA
+// ======================================================================
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
@@ -20,14 +414,10 @@ class AppDrawer extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // ==========================================
           // 1. CUSTOM PREMIUM HEADER
-          // ==========================================
           Container(
             padding: EdgeInsets.only(
-              top:
-                  MediaQuery.of(context).padding.top +
-                  20, // Aman dari notch/status bar
+              top: MediaQuery.of(context).padding.top + 20,
               bottom: 20,
               left: 20,
               right: 20,
@@ -50,7 +440,6 @@ class AppDrawer extends StatelessWidget {
             ),
             child: Row(
               children: [
-                // --- GLOWING LOGO ---
                 Container(
                   width: 50,
                   height: 50,
@@ -70,7 +459,6 @@ class AppDrawer extends StatelessWidget {
                       'assets/images/logo.png',
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
-                        // Fallback keren kalau logo belum ada
                         return Container(
                           color: colorScheme.primary,
                           child: const Icon(
@@ -84,8 +472,6 @@ class AppDrawer extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 16),
-
-                // --- NAMA APLIKASI ---
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,9 +501,7 @@ class AppDrawer extends StatelessWidget {
             ),
           ),
 
-          // ==========================================
           // 2. DAFTAR MENU PLATFORM
-          // ==========================================
           Expanded(
             child: ListView(
               physics: const BouncingScrollPhysics(),
@@ -179,21 +563,34 @@ class AppDrawer extends StatelessWidget {
             ),
           ),
 
-          // ==========================================
           // 3. FOOTER (SETTINGS, ABOUT, PRIVACY)
-          // ==========================================
-          _buildFooterMenu(context, 'Tutorial Penggunaan', Icons.menu_book_rounded, () {
-            Navigator.pop(context);
-            _showTutorialModal(context);
-          }),
-          _buildFooterMenu(context, 'Tentang Aplikasi', Icons.info_outline_rounded, () {
-            Navigator.pop(context);
-            _showAboutModal(context);
-          }),
-          _buildFooterMenu(context, 'Kebijakan Privasi', Icons.privacy_tip_outlined, () {
-            Navigator.pop(context);
-            _showPrivacyModal(context);
-          }),
+          _buildFooterMenu(
+            context,
+            'Tutorial Penggunaan',
+            Icons.menu_book_rounded,
+            () {
+              Navigator.pop(context);
+              showTutorialModal(context); // Panggil fungsi global
+            },
+          ),
+          _buildFooterMenu(
+            context,
+            'Tentang Aplikasi',
+            Icons.info_outline_rounded,
+            () {
+              Navigator.pop(context);
+              _showAboutModal(context);
+            },
+          ),
+          _buildFooterMenu(
+            context,
+            'Kebijakan Privasi',
+            Icons.privacy_tip_outlined,
+            () {
+              Navigator.pop(context);
+              _showPrivacyModal(context);
+            },
+          ),
           _buildFooterMenu(context, 'Pengaturan', Icons.settings_rounded, () {
             Navigator.pop(context);
             Navigator.push(
@@ -203,7 +600,6 @@ class AppDrawer extends StatelessWidget {
           }),
           const SizedBox(height: 8),
 
-          // Versi Aplikasi di paling bawah biar kayak aplikasi profesional
           Padding(
             padding: const EdgeInsets.only(bottom: 20),
             child: FutureBuilder<PackageInfo>(
@@ -213,7 +609,10 @@ class AppDrawer extends StatelessWidget {
                 return GestureDetector(
                   onTap: () {
                     Navigator.pop(context);
-                    _showChangelogModal(context, version);
+                    showChangelogModal(
+                      context,
+                      version,
+                    ); // Panggil fungsi global
                   },
                   child: Text(
                     'v$version (Pro Build)',
@@ -233,9 +632,7 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  // ==========================================
   // WIDGET CARD MENU PLATFORM
-  // ==========================================
   Widget _buildMenu(
     BuildContext context,
     String title,
@@ -297,7 +694,7 @@ class AppDrawer extends StatelessWidget {
         ),
         onTap: isAvailable
             ? () {
-                Navigator.pop(context); // Tutup drawer dulu
+                Navigator.pop(context);
                 if (title == 'YouTube') {
                   Navigator.push(
                     context,
@@ -360,248 +757,6 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  // ─── CHANGELOG MODAL ──────────────────────────────────────────
-  void _showChangelogModal(BuildContext context, String currentVersion) {
-    final theme = Theme.of(context);
-    final primary = theme.colorScheme.primary;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        height: MediaQuery.of(ctx).size.height * 0.85,
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Column(
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: primary.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.new_releases_rounded,
-                      color: primary,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Apa yang Baru?',
-                        style: GoogleFonts.workSans(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
-                      Text(
-                        'Riwayat Pembaruan RaDwnldr',
-                        style: GoogleFonts.workSans(
-                          fontSize: 13,
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.5,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Divider(color: theme.colorScheme.onSurface.withValues(alpha: 0.08)),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-                children: [
-                  // --- VERSI 1.0.0 ---
-                  _changelogVersion(
-                    theme,
-                    '1.0.0',
-                    '15 Mei 2026',
-                    isLatest: true,
-                    primary: primary,
-                    changes: [
-                      _clItem(
-                        theme,
-                        Icons.dashboard_rounded,
-                        'Smart Queue System',
-                        'Sistem antrian pintar dengan tampilan visual premium dan fitur auto-sorting.',
-                        Colors.blue,
-                      ),
-                      _clItem(
-                        theme,
-                        Icons.battery_charging_full_rounded,
-                        'Native WakeLock',
-                        'Mencegah CPU tertidur saat mengunduh atau melakukan muxing FFmpeg di latar belakang.',
-                        const Color(0xFF00FF9D),
-                      ),
-                      _clItem(
-                        theme,
-                        Icons.shield_rounded,
-                        'Bypass 403 Forbidden',
-                        'Client spoofing menggunakan iOS/VR signatures untuk menghindari pemblokiran YouTube.',
-                        Colors.orange,
-                      ),
-                      _clItem(
-                        theme,
-                        Icons.movie_creation_rounded,
-                        'FFmpeg Muxing',
-                        'Penggabungan otomatis video HD dan audio resolusi tinggi menggunakan library native.',
-                        Colors.purple,
-                      ),
-                      _clItem(
-                        theme,
-                        Icons.auto_awesome_rounded,
-                        'Premium UI',
-                        'Desain antarmuka eksklusif dengan efek Glassmorphism, Video Background, dan Skeleton Loading.',
-                        primary,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _changelogVersion(
-    ThemeData theme,
-    String ver,
-    String date, {
-    required List<Widget> changes,
-    bool isLatest = false,
-    required Color primary,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: isLatest
-                    ? primary.withValues(alpha: 0.15)
-                    : theme.colorScheme.onSurface.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                'v$ver',
-                style: GoogleFonts.jetBrainsMono(
-                  fontWeight: FontWeight.bold,
-                  color: isLatest ? primary : theme.colorScheme.onSurface,
-                  fontSize: 13,
-                ),
-              ),
-            ),
-            if (isLatest) ...[
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: primary,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  'Terbaru',
-                  style: GoogleFonts.jetBrainsMono(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    fontSize: 10,
-                  ),
-                ),
-              ),
-            ],
-            const Spacer(),
-            Text(
-              date,
-              style: GoogleFonts.workSans(
-                fontSize: 12,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        ...changes,
-      ],
-    );
-  }
-
-  Widget _clItem(
-    ThemeData theme,
-    IconData icon,
-    String title,
-    String desc,
-    Color color,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.12)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.workSans(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  desc,
-                  style: GoogleFonts.workSans(
-                    fontSize: 12,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   // ─── ABOUT MODAL ──────────────────────────────────────────────
   void _showAboutModal(BuildContext context) async {
     final theme = Theme.of(context);
@@ -636,7 +791,6 @@ class AppDrawer extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
                 children: [
-                  // App Icon & Name
                   Center(
                     child: Column(
                       children: [
@@ -709,8 +863,6 @@ class AppDrawer extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 28),
-
-                  // Description
                   Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
@@ -737,8 +889,6 @@ class AppDrawer extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
-
-                  // Key features
                   Text(
                     'Fitur Utama',
                     style: GoogleFonts.workSans(
@@ -779,8 +929,6 @@ class AppDrawer extends StatelessWidget {
                     primary,
                   ),
                   const SizedBox(height: 20),
-
-                  // Dev info
                   Text(
                     'Dikembangkan Oleh',
                     style: GoogleFonts.workSans(
@@ -931,7 +1079,12 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  Widget _featureRow(ThemeData theme, IconData icon, String text, Color primary) {
+  Widget _featureRow(
+    ThemeData theme,
+    IconData icon,
+    String text,
+    Color primary,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -1082,37 +1235,37 @@ class AppDrawer extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
                 children: [
-                  _privacySection(
+                  _privacySectionGlobal(
                     theme,
                     '🔒 Pengumpulan Data',
                     'Aplikasi ini beroperasi 100% secara lokal. Kami tidak mengumpulkan atau membagikan data unduhan Anda ke server manapun.',
                   ),
-                  _privacySection(
+                  _privacySectionGlobal(
                     theme,
                     '📁 Akses Penyimpanan',
                     'Izin penyimpanan (Storage/Media) hanya digunakan untuk menyimpan file hasil unduhan langsung ke HP Anda.',
                   ),
-                  _privacySection(
+                  _privacySectionGlobal(
                     theme,
                     '🔐 Keamanan',
                     'Semua proses unduhan dilakukan melalui jalur aman (HTTPS) langsung dari server penyedia konten (seperti YouTube).',
                   ),
-                  _privacySection(
+                  _privacySectionGlobal(
                     theme,
                     '🧬 Data Analytics',
                     'Kami tidak menyertakan SDK pelacakan (tracking) atau analitik pihak ketiga demi menjaga privasi pengguna secara maksimal.',
                   ),
-                  _privacySection(
+                  _privacySectionGlobal(
                     theme,
                     '🌐 Koneksi Internet',
                     'Akses internet mutlak diperlukan untuk mengunduh media yang Anda minta beserta mengambil metadatanya.',
                   ),
-                  _privacySection(
+                  _privacySectionGlobal(
                     theme,
                     '📝 Perubahan Kebijakan',
                     'Jika ada perubahan mendasar pada pengelolaan izin, kami akan merilis pemberitahuan melalui changelog resmi.',
                   ),
-                  _privacySection(
+                  _privacySectionGlobal(
                     theme,
                     '📬 Kontak Developer',
                     'Jika ada pertanyaan mengenai keamanan dan privasi, hubungi pengembang melalui Instagram @bangameck.',
@@ -1133,150 +1286,6 @@ class AppDrawer extends StatelessWidget {
                         height: 1.5,
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _privacySection(ThemeData theme, String title, String body) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.onSurface.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.06),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: GoogleFonts.workSans(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            body,
-            style: GoogleFonts.workSans(
-              fontSize: 13,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-              height: 1.6,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ─── TUTORIAL MODAL ───────────────────────────────────────────
-  void _showTutorialModal(BuildContext context) {
-    final theme = Theme.of(context);
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        height: MediaQuery.of(ctx).size.height * 0.88,
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Column(
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.menu_book_rounded,
-                      color: Colors.orange,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Tutorial Penggunaan',
-                        style: GoogleFonts.workSans(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
-                      Text(
-                        'Panduan Mengunduh Media',
-                        style: GoogleFonts.workSans(
-                          fontSize: 13,
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.5,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Divider(color: theme.colorScheme.onSurface.withValues(alpha: 0.08)),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
-                children: [
-                  _privacySection(
-                    theme,
-                    '1️⃣ Salin Tautan (Copy Link)',
-                    'Buka aplikasi YouTube resmi, cari video yang ingin Anda unduh, lalu klik tombol "Bagikan" dan pilih "Salin Tautan".',
-                  ),
-                  _privacySection(
-                    theme,
-                    '2️⃣ Tempel Tautan (Paste Link)',
-                    'Buka aplikasi RaDwnldr, masuk ke menu YouTube, dan tempel (paste) tautan tersebut ke dalam kolom pencarian di bagian atas layar.',
-                  ),
-                  _privacySection(
-                    theme,
-                    '3️⃣ Pilih Resolusi & Format',
-                    'Aplikasi akan memproses video dan menampilkan daftar resolusi. Anda dapat memilih mode "Video" (Resolusi HD/4K) atau "Audio" (MP3 Murni).',
-                  ),
-                  _privacySection(
-                    theme,
-                    '4️⃣ Proses Unduhan & Muxing',
-                    'Setelah tombol di-klik, file akan masuk ke daftar "Antrian". Untuk video beresolusi tinggi (1080p ke atas), aplikasi otomatis menggunakan teknologi Muxing FFmpeg untuk menggabungkan video beresolusi tinggi dengan audio.',
-                  ),
-                  _privacySection(
-                    theme,
-                    '⚠️ Peringatan Penting',
-                    'Selama proses Muxing (penggabungan), sangat disarankan untuk tidak menutup paksa (force close) aplikasi. Aplikasi ini memiliki fitur WakeLock yang mencegah HP Anda tertidur, sehingga aman diletakkan meskipun layar mati.',
                   ),
                 ],
               ),

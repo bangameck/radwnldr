@@ -58,12 +58,14 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark =
+        theme.brightness == Brightness.dark; // Deteksi Dark/Light Mode
 
     return Scaffold(
-      backgroundColor: const Color(
-        0xFF0B1120,
-      ), // Deep Navy murni biar logo standout
+      backgroundColor:
+          theme.scaffoldBackgroundColor, // Dinamis mengikuti tema aplikasi
       body: Stack(
         children: [
           // 1. KONTEN TENGAH (LOGO & BRAND)
@@ -116,7 +118,9 @@ class _SplashScreenState extends State<SplashScreen>
                   'RaDwnldr',
                   style: GoogleFonts.workSans(
                     fontSize: 36,
-                    color: Colors.white,
+                    color: isDark
+                        ? Colors.white
+                        : Colors.black87, // Teks dinamis
                     fontWeight: FontWeight.w900,
                     letterSpacing: 3.0,
                   ),
@@ -141,7 +145,9 @@ class _SplashScreenState extends State<SplashScreen>
                       width: 250,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.1),
+                        color: colorScheme.onSurface.withValues(
+                          alpha: 0.1,
+                        ), // Background bar dinamis
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Stack(
@@ -155,7 +161,11 @@ class _SplashScreenState extends State<SplashScreen>
                                   gradient: LinearGradient(
                                     colors: [
                                       colorScheme.primary,
-                                      Colors.purpleAccent.shade100,
+                                      isDark
+                                          ? Colors.purpleAccent.shade100
+                                          : colorScheme.primary.withValues(
+                                              alpha: 0.5,
+                                            ), // Gradien adaptif
                                     ],
                                   ),
                                   borderRadius: BorderRadius.circular(10),
@@ -176,9 +186,11 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                     ),
                     const SizedBox(height: 15),
-                    const Icon(
+                    Icon(
                       Icons.cloud_done_outlined,
-                      color: Colors.white24,
+                      color: colorScheme.onSurface.withValues(
+                        alpha: 0.2,
+                      ), // Ikon awan dinamis
                       size: 20,
                     ),
                   ],
@@ -201,7 +213,9 @@ class _SplashScreenState extends State<SplashScreen>
                     textAlign: TextAlign.center,
                     style: GoogleFonts.workSans(
                       fontSize: 10,
-                      color: Colors.white.withValues(alpha: 0.5),
+                      color: colorScheme.onSurface.withValues(
+                        alpha: 0.5,
+                      ), // Teks dinamis
                       fontStyle: FontStyle.italic,
                       fontWeight: FontWeight.w500,
                       letterSpacing: 0.5,
@@ -216,7 +230,9 @@ class _SplashScreenState extends State<SplashScreen>
                       'by ',
                       style: GoogleFonts.workSans(
                         fontSize: 11,
-                        color: Colors.white38,
+                        color: colorScheme.onSurface.withValues(
+                          alpha: 0.4,
+                        ), // Teks dinamis
                         fontWeight: FontWeight.w400,
                       ),
                     ),
@@ -224,7 +240,9 @@ class _SplashScreenState extends State<SplashScreen>
                       'RadevankaProject',
                       style: GoogleFonts.workSans(
                         fontSize: 11,
-                        color: Colors.white70,
+                        color: colorScheme.onSurface.withValues(
+                          alpha: 0.7,
+                        ), // Teks dinamis
                         fontWeight: FontWeight.w800,
                         letterSpacing: 1.0,
                       ),

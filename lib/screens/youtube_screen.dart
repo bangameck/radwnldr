@@ -145,10 +145,10 @@ class _YoutubeScreenState extends State<YoutubeScreen>
                 ),
                 const SizedBox(height: 12),
                 _buildFormatButton(
-                  title: 'MP4 (Layar Mobil)',
+                  title: 'Konversi ke MP4',
                   subtitle: 'Re-Encode (Butuh waktu ekstra)',
                   color: Colors.orange.shade600,
-                  icon: Icons.directions_car_rounded,
+                  icon: Icons.movie_rounded,
                   onTap: () {
                     Navigator.pop(context);
                     _processDownload(
@@ -932,9 +932,15 @@ class _YoutubeScreenState extends State<YoutubeScreen>
                                           if (isDone)
                                             InkWell(
                                               onTap: () {
-                                                final appProv = Provider.of<AppProvider>(context, listen: false);
+                                                final appProv =
+                                                    Provider.of<AppProvider>(
+                                                      context,
+                                                      listen: false,
+                                                    );
                                                 queueProvider.openFolder(
-                                                  task.isAudio ? appProv.audioPath : appProv.videoPath,
+                                                  task.isAudio
+                                                      ? appProv.audioPath
+                                                      : appProv.videoPath,
                                                 );
                                               },
                                               borderRadius:

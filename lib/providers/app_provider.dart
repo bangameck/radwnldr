@@ -1,13 +1,15 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
 class AppProvider extends ChangeNotifier {
   // --- Default Values ---
   bool _isDarkMode = true;
   Color _accentColor = emerald;
-  String _videoPath = '/storage/emulated/0/Download/RaDwnldr/Video';
-  String _audioPath = '/storage/emulated/0/Download/RaDwnldr/Audio';
+  String _videoPath = '/storage/emulated/0/Movies/RaDwnldr';
+  String _audioPath = '/storage/emulated/0/Music/RaDwnldr';
 
   // --- Premium Colors ---
   static const Color emerald = Color(0xFF10B981);
@@ -20,6 +22,10 @@ class AppProvider extends ChangeNotifier {
   Color get accentColor => _accentColor;
   String get videoPath => _videoPath;
   String get audioPath => _audioPath;
+
+  // --- Cache State ---
+  String _cacheSize = "Menghitung...";
+  String get cacheSize => _cacheSize;
 
   AppProvider() {
     _loadSettings();
@@ -35,6 +41,9 @@ class AppProvider extends ChangeNotifier {
     _videoPath = prefs.getString('videoPath') ?? _videoPath;
     _audioPath = prefs.getString('audioPath') ?? _audioPath;
     notifyListeners();
+
+    // Hitung cache di background
+    calculateCache();
   }
 
   // 2. Ganti Tema (Light/Dark)
@@ -78,6 +87,44 @@ class AppProvider extends ChangeNotifier {
         await prefs.setString('audioPath', path);
       }
       notifyListeners();
+    }
+  }
+
+  // 5. Hitung Cache
+  Future<void> calculateCache() async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      int totalSize = 0;
+      if (tempDir.existsSync()) {
+        tempDir.listSync(recursive: true, followLinks: false).forEach((entity) {
+          if (entity is File) {
+            totalSize += entity.lengthSync();
+          }
+        });
+      }
+      final sizeMb = totalSize / (1024 * 1024);
+      _cacheSize = "${sizeMb.toStringAsFixed(2)} MB";
+      notifyListeners();
+    } catch (e) {
+      _cacheSize = "0 MB";
+      notifyListeners();
+    }
+  }
+
+  // 6. Hapus Cache
+  Future<void> clearCache() async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      if (tempDir.existsSync()) {
+        tempDir.listSync(recursive: true, followLinks: false).forEach((entity) {
+          try {
+            entity.deleteSync(recursive: true);
+          } catch (_) {}
+        });
+      }
+      await calculateCache();
+    } catch (e) {
+      debugPrint("Gagal menghapus cache: $e");
     }
   }
 }

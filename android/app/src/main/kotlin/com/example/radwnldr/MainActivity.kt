@@ -28,12 +28,28 @@ class MainActivity : FlutterActivity() {
           val path = call.argument<String>("path") ?: ""
 
           try {
+            // Pastikan direktori ada
+            val dir = java.io.File(path)
+            if (!dir.exists()) {
+              dir.mkdirs()
+            }
+
+            // Bypass StrictMode untuk mengizinkan file:// uri (menghindari FileUriExposedException)
+            val builder = android.os.StrictMode.VmPolicy.Builder()
+            android.os.StrictMode.setVmPolicy(builder.build())
+
             // Coba buka folder secara spesifik
             val intent = android.content.Intent(android.content.Intent.ACTION_VIEW)
-            val uri = Uri.parse(path)
-            intent.setDataAndType(uri, "*/*")
+            val uri = Uri.parse("file://$path")
+            intent.setDataAndType(uri, "resource/folder")
             intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
-            startActivity(intent)
+
+            if (intent.resolveActivity(packageManager) != null) {
+              startActivity(intent)
+            } else {
+              intent.setDataAndType(uri, "*/*")
+              startActivity(intent)
+            }
           } catch (e: Exception) {
             // Fallback: Jika File Manager HP tidak support direct-path, buka folder Downloads
             // bawaan
