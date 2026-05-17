@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../screens/settings_screen.dart';
 import '../screens/youtube_screen.dart';
+import '../screens/tiktok_screen.dart';
 
 // ======================================================================
 // FUNGSI GLOBAL UNTUK MODAL (Bisa dipanggil dari mana saja)
@@ -84,12 +85,76 @@ void showChangelogModal(BuildContext context, String currentVersion) {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
               children: [
+                // --- VERSI 1.2.0 ---
+                _changelogVersion(
+                  theme,
+                  '1.2.0',
+                  '18 Mei 2026',
+                  isLatest: true,
+                  primary: primary,
+                  changes: [
+                    _clItem(
+                      theme,
+                      Icons.video_library_rounded,
+                      'TikTok Downloader Engine',
+                      'Unduh video tanpa watermark, ekstrak MP3, dan fitur Magic Muxing untuk post foto Slide.',
+                      Colors.pinkAccent,
+                    ),
+                    _clItem(
+                      theme,
+                      Icons.folder_special_rounded,
+                      'Universal Download Manager',
+                      'Arsitektur cerdas pemisah unduhan YouTube dan TikTok beserta direktori khusus Social Media.',
+                      Colors.blue,
+                    ),
+                    _clItem(
+                      theme,
+                      Icons.cleaning_services_rounded,
+                      'Bulk Clean & Smart Naming',
+                      'Penamaan otomatis anti-overwrite dan sapu bersih histori antrian.',
+                      const Color(0xFF00FF9D),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // --- VERSI 1.1.0 ---
+                _changelogVersion(
+                  theme,
+                  '1.1.0',
+                  '17 Mei 2026',
+                  isLatest: false,
+                  primary: primary,
+                  changes: [
+                    _clItem(
+                      theme,
+                      Icons.search_rounded,
+                      'YouTube Search Integration',
+                      'Pencarian video langsung di dalam aplikasi tanpa perlu copy-paste link.',
+                      Colors.red,
+                    ),
+                    _clItem(
+                      theme,
+                      Icons.folder_rounded,
+                      'Native SAF Folder Navigation',
+                      'Sistem navigasi folder dengan format URI Android 11+ Scoped Storage.',
+                      Colors.amber,
+                    ),
+                    _clItem(
+                      theme,
+                      Icons.memory_rounded,
+                      'OOM RAM Optimization',
+                      'Pencegahan crash di HP entry-level dengan mode largeHeap dan perbaikan JNI Release Mode.',
+                      Colors.purple,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
                 // --- VERSI 1.0.0 ---
                 _changelogVersion(
                   theme,
                   '1.0.0',
                   '15 Mei 2026',
-                  isLatest: true,
+                  isLatest: false,
                   primary: primary,
                   changes: [
                     _clItem(
@@ -192,7 +257,7 @@ void showTutorialModal(BuildContext context) {
                       ),
                     ),
                     Text(
-                      'Panduan Mengunduh Media',
+                      'Panduan Mengunduh Media (YT & TikTok)',
                       style: GoogleFonts.workSans(
                         fontSize: 13,
                         color: theme.colorScheme.onSurface.withValues(
@@ -213,28 +278,28 @@ void showTutorialModal(BuildContext context) {
               children: [
                 _privacySectionGlobal(
                   theme,
-                  '1️⃣ Salin Tautan (Copy Link)',
-                  'Buka aplikasi YouTube resmi, cari video yang ingin Anda unduh, lalu klik tombol "Bagikan" dan pilih "Salin Tautan".',
+                  '1️⃣ Cari atau Salin Tautan',
+                  'Buka aplikasi YouTube / TikTok, lalu salin tautan (Copy Link) dari video atau postingan yang Anda inginkan.\n\n💡 Tip: Khusus YouTube, Anda juga bisa langsung mengetikkan judul lagu/video di kolom pencarian aplikasi RaDwnldr.',
                 ),
                 _privacySectionGlobal(
                   theme,
-                  '2️⃣ Tempel Tautan (Paste Link)',
-                  'Buka aplikasi RaDwnldr, masuk ke menu YouTube, dan tempel (paste) tautan tersebut ke dalam kolom pencarian di bagian atas layar.',
+                  '2️⃣ Tempel (Paste) Tautan',
+                  'Pilih menu YouTube atau TikTok di layar utama RaDwnldr, lalu tempel tautan ke kolom yang disediakan. Aplikasi akan otomatis menganalisa metadata media tersebut.',
                 ),
                 _privacySectionGlobal(
                   theme,
-                  '3️⃣ Pilih Resolusi & Format',
-                  'Aplikasi akan memproses video dan menampilkan daftar resolusi. Anda dapat memilih mode "Video" (Resolusi HD/4K) atau "Audio" (MP3 Murni).',
+                  '3️⃣ Pilih Resolusi & Format Khusus',
+                  '• YouTube: Pilih resolusi Video kualitas tinggi (Membutuhkan proses penggabungan/Muxing) atau unduh Audio (MP3).\n\n• TikTok: Unduh Video (Tanpa Watermark), MP3 Audio, atau simpan foto dari postingan Slide. \n\n✨ Fitur Premium: Pada postingan TikTok Slide, tekan "Jadikan Video MP4" untuk otomatis menggabungkan gambar dan lagu menjadi satu video utuh!',
                 ),
                 _privacySectionGlobal(
                   theme,
-                  '4️⃣ Proses Unduhan & Muxing',
-                  'Setelah tombol di-klik, file akan masuk ke daftar "Antrian". Untuk video beresolusi tinggi (1080p ke atas), aplikasi otomatis menggunakan teknologi Muxing FFmpeg untuk menggabungkan video beresolusi tinggi dengan audio.',
+                  '4️⃣ Smart Queue & Pemrosesan',
+                  'Media akan masuk ke daftar "Antrian Unduhan". Sistem akan mengunduh dan melakukan pemrosesan native FFmpeg secara otomatis. Anda dapat memantau progres langsung dari dalam aplikasi maupun panel notifikasi.',
                 ),
                 _privacySectionGlobal(
                   theme,
                   '⚠️ Peringatan Penting',
-                  'Selama proses Muxing (penggabungan), sangat disarankan untuk tidak menutup paksa (force close) aplikasi. Aplikasi ini memiliki fitur WakeLock yang mencegah HP Anda tertidur, sehingga aman diletakkan meskipun layar mati.',
+                  'Selama proses pemrosesan/Muxing sedang berjalan (terutama pembuatan Video MP4 dari gambar atau YouTube 4K), mohon jangan menutup paksa (force close) aplikasi. Fitur Android WakeLock sudah aktif, sehingga proses tetap aman berjalan meskipun layar HP mati.',
                 ),
               ],
             ),
@@ -547,7 +612,7 @@ class AppDrawer extends StatelessWidget {
                     color: Colors.grey,
                     size: 22,
                   ),
-                  'Soon',
+                  'Available',
                 ),
                 _buildMenu(
                   context,
@@ -605,7 +670,7 @@ class AppDrawer extends StatelessWidget {
             child: FutureBuilder<PackageInfo>(
               future: PackageInfo.fromPlatform(),
               builder: (context, snapshot) {
-                final version = snapshot.data?.version ?? '1.0.0';
+                final version = snapshot.data?.version ?? '1.2.0';
                 return GestureDetector(
                   onTap: () {
                     Navigator.pop(context);
@@ -700,6 +765,14 @@ class AppDrawer extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) => const YoutubeScreen(),
+                    ),
+                  );
+                }
+                if (title == 'TikTok') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const TiktokScreen(),
                     ),
                   );
                 }
@@ -928,6 +1001,65 @@ class AppDrawer extends StatelessWidget {
                     'Simpan Langsung ke Galeri',
                     primary,
                   ),
+
+                  const SizedBox(height: 20),
+
+                  // ===================================================
+                  // SECTION BARU: CREDITS & OPEN SOURCE
+                  // ===================================================
+                  Text(
+                    'Special Thanks & Credits',
+                    style: GoogleFonts.workSans(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.03,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.07,
+                        ),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _creditRow(
+                          theme,
+                          Icons.code_rounded,
+                          'youtube_explode_dart',
+                          'Mesin utama bypass JavaScript & ekstraksi manifest YouTube.',
+                          primary,
+                        ),
+                        const Divider(height: 20),
+                        _creditRow(
+                          theme,
+                          Icons.api_rounded,
+                          'TikWM Public API',
+                          'Layanan API cerdas untuk unduhan video & slide foto TikTok.',
+                          primary,
+                        ),
+                        const Divider(height: 20),
+                        _creditRow(
+                          theme,
+                          Icons.video_settings_rounded,
+                          'FFmpeg Kit',
+                          'Pahlawan tanpa tanda jasa di balik layar re-encode & muxing.',
+                          primary,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // ===================================================
                   const SizedBox(height: 20),
                   Text(
                     'Dikembangkan Oleh',
@@ -1079,6 +1211,7 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
+  // WIDGET HELPER LAMA
   Widget _featureRow(
     ThemeData theme,
     IconData icon,
@@ -1100,6 +1233,47 @@ class AppDrawer extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  // WIDGET HELPER BARU UNTUK CREDITS WAK!
+  Widget _creditRow(
+    ThemeData theme,
+    IconData icon,
+    String title,
+    String subtitle,
+    Color primary,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 20, color: primary),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: GoogleFonts.workSans(
+                  fontSize: 12,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

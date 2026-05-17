@@ -24,9 +24,16 @@ class QueueProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void clearHistory() {
+    _queue.removeWhere(
+      (task) =>
+          task.status == TaskStatus.success || task.status == TaskStatus.error,
+    );
+    notifyListeners();
+  }
+
   Future<void> openFolder(String path) async {
-    // <--- Tambahkan parameter String path
-    await _dlService.openFolder(path); // <--- Lempar path ke DownloadService
+    await _dlService.openFolder(path);
   }
 
   Future<void> _startQueue() async {
@@ -47,152 +54,249 @@ class QueueProvider extends ChangeNotifier {
     notifyListeners();
     _updateNotification(task, 0.0, 'Memulai...', '');
 
-    // Format akhir berdasarkan pilihan (MP3, MKV, atau MP4)
-    final ext = task.isAudio ? 'mp3' : task.videoFormat;
+    // Modifikasi ekstensi agar format "tiktok_slideshow" dipaksa dibaca sebagai "mp4" oleh sistem finalisasi
+    String ext = task.isAudio ? 'mp3' : task.videoFormat;
+    if (task.videoFormat == 'tiktok_slideshow') ext = 'mp4';
+
     final cleanTitle = task.title.replaceAll(RegExp(r'[^\w\s]+'), '').trim();
     final String finalPath = '${task.saveDirectory}/$cleanTitle.$ext';
 
     final dir = Directory(task.saveDirectory);
     if (!await dir.exists()) await dir.create(recursive: true);
 
-    var yt = YoutubeExplode();
-
     try {
-      task.statusText = 'Mendapatkan Jalur Bebas JS...';
-      notifyListeners();
+      // ========================================================
+      // LOGIKA CERDAS: DETEKSI PLATFORM DARI URL!
+      // ========================================================
+      bool isYouTube =
+          task.videoUrl.contains('youtube.com') ||
+          task.videoUrl.contains('youtu.be');
 
-      // Penyamaran Klien Anti-Bypass
-      var manifest = await yt.videos.streamsClient.getManifest(
-        task.videoUrl,
-        ytClients: [YoutubeApiClient.safari, YoutubeApiClient.androidVr],
-      );
-
-      if (task.isAudio) {
-        task.statusText = 'Menghubungkan Server Audio...';
+      if (isYouTube) {
+        // --- 1. JALUR YOUTUBE EXPLODE ---
+        var yt = YoutubeExplode();
+        task.statusText = 'Mendapatkan Jalur Bebas JS...';
         notifyListeners();
 
-        var audioStream = manifest.audioOnly.withHighestBitrate();
-        var stream = yt.videos.streamsClient.get(audioStream);
-
-        String tempAudio = await _dlService.downloadFromStream(
-          stream,
-          'temp_${task.id}.webm',
-          audioStream.size.totalBytes,
-          onProgress: (p, details) =>
-              _updateProgress(task, p, 'Mengunduh Audio', details),
+        var manifest = await yt.videos.streamsClient.getManifest(
+          task.videoUrl,
+          ytClients: [YoutubeApiClient.safari, YoutubeApiClient.androidVr],
         );
 
-        task.status = TaskStatus.processing;
-        task.statusText = 'Mempersiapkan FFmpeg...';
-        notifyListeners();
+        if (task.isAudio) {
+          task.statusText = 'Menghubungkan Server Audio...';
+          notifyListeners();
 
-        final command =
-            '-i "$tempAudio" -vn -ar 44100 -ac 2 -b:a ${task.audioBitrate ?? "192k"} "$finalPath" -y';
-        bool success = await _dlService.executeFFmpeg(
-          command,
-          totalDurationMs: task.totalDurationMs,
-          onProgress: (p, details) =>
-              _updateProgress(task, p, 'Mengkonversi MP3', details),
-        );
+          var audioStream = manifest.audioOnly.withHighestBitrate();
+          var stream = yt.videos.streamsClient.get(audioStream);
 
-        await _dlService.cleanUpTempFiles([tempAudio]);
-        if (!success) throw Exception('Gagal konversi FFmpeg');
-      } else if (task.requiresMuxing) {
-        task.statusText = 'Menyiapkan Jalur HD...';
-        notifyListeners();
-
-        VideoStreamInfo videoStream;
-        try {
-          videoStream = manifest.videoOnly.firstWhere(
-            (s) => s.qualityLabel == task.qualityLabel,
+          String tempAudio = await _dlService.downloadFromStream(
+            stream,
+            'temp_${task.id}.webm',
+            audioStream.size.totalBytes,
+            onProgress: (p, details) =>
+                _updateProgress(task, p, 'Mengunduh Audio', details),
           );
-        } catch (_) {
-          videoStream = manifest.videoOnly.sortByVideoQuality().last;
-        }
-        var audioStream = manifest.audioOnly.withHighestBitrate();
 
-        String vExt = videoStream.container.name.toString();
-        String aExt = audioStream.container.name.toString();
+          task.status = TaskStatus.processing;
+          task.statusText = 'Mempersiapkan FFmpeg...';
+          notifyListeners();
 
-        task.statusText = 'Mengunduh Video HD...';
-        notifyListeners();
+          final command =
+              '-i "$tempAudio" -vn -ar 44100 -ac 2 -b:a ${task.audioBitrate ?? "192k"} "$finalPath" -y';
+          bool success = await _dlService.executeFFmpeg(
+            command,
+            totalDurationMs: task.totalDurationMs,
+            onProgress: (p, details) =>
+                _updateProgress(task, p, 'Mengkonversi MP3', details),
+          );
 
-        var vidStream = yt.videos.streamsClient.get(videoStream);
-        String tempVideo = await _dlService.downloadFromStream(
-          vidStream,
-          'temp_vid_${task.id}.$vExt',
-          videoStream.size.totalBytes,
-          onProgress: (p, details) =>
-              _updateProgress(task, p * 0.5, 'Mengunduh Video HD', details),
-        );
+          await _dlService.cleanUpTempFiles([tempAudio]);
+          if (!success) throw Exception('Gagal konversi FFmpeg');
+        } else if (task.requiresMuxing) {
+          task.statusText = 'Menyiapkan Jalur HD...';
+          notifyListeners();
 
-        task.statusText = 'Mengunduh Audio HD...';
-        notifyListeners();
+          VideoStreamInfo videoStream;
+          try {
+            videoStream = manifest.videoOnly.firstWhere(
+              (s) => s.qualityLabel == task.qualityLabel,
+            );
+          } catch (_) {
+            videoStream = manifest.videoOnly.sortByVideoQuality().last;
+          }
+          var audioStream = manifest.audioOnly.withHighestBitrate();
 
-        var audStream = yt.videos.streamsClient.get(audioStream);
-        String tempAudio = await _dlService.downloadFromStream(
-          audStream,
-          'temp_aud_${task.id}.$aExt',
-          audioStream.size.totalBytes,
-          onProgress: (p, details) => _updateProgress(
-            task,
-            0.5 + (p * 0.2),
-            'Mengunduh Audio HD',
-            details,
-          ),
-        );
+          String vExt = videoStream.container.name.toString();
+          String aExt = audioStream.container.name.toString();
 
-        task.status = TaskStatus.processing;
-        notifyListeners();
+          task.statusText = 'Mengunduh Video HD...';
+          notifyListeners();
 
-        // MKV (Cepat) vs MP4 (Konversi Ultrafast)
-        String command;
-        if (task.videoFormat == 'mkv') {
-          command = '-i "$tempVideo" -i "$tempAudio" -c copy "$finalPath" -y';
+          var vidStream = yt.videos.streamsClient.get(videoStream);
+          String tempVideo = await _dlService.downloadFromStream(
+            vidStream,
+            'temp_vid_${task.id}.$vExt',
+            videoStream.size.totalBytes,
+            onProgress: (p, details) =>
+                _updateProgress(task, p * 0.5, 'Mengunduh Video HD', details),
+          );
+
+          task.statusText = 'Mengunduh Audio HD...';
+          notifyListeners();
+
+          var audStream = yt.videos.streamsClient.get(audioStream);
+          String tempAudio = await _dlService.downloadFromStream(
+            audStream,
+            'temp_aud_${task.id}.$aExt',
+            audioStream.size.totalBytes,
+            onProgress: (p, details) => _updateProgress(
+              task,
+              0.5 + (p * 0.2),
+              'Mengunduh Audio HD',
+              details,
+            ),
+          );
+
+          task.status = TaskStatus.processing;
+          notifyListeners();
+
+          String command;
+          if (task.videoFormat == 'mkv') {
+            command = '-i "$tempVideo" -i "$tempAudio" -c copy "$finalPath" -y';
+          } else {
+            command =
+                '-i "$tempVideo" -i "$tempAudio" -c:v libx264 -preset ultrafast -crf 28 -c:a aac -b:a 128k "$finalPath" -y';
+          }
+
+          bool success = await _dlService.executeFFmpeg(
+            command,
+            totalDurationMs: task.totalDurationMs,
+            onProgress: (p, details) {
+              String titleText = task.videoFormat == 'mp4'
+                  ? 'Konversi ke MP4'
+                  : 'Menggabungkan Video (MKV)';
+              _updateProgress(task, 0.7 + (p * 0.3), titleText, details);
+            },
+          );
+
+          await _dlService.cleanUpTempFiles([tempVideo, tempAudio]);
+          if (!success) throw Exception('Gagal memproses Video dengan FFmpeg');
         } else {
-          command =
-              '-i "$tempVideo" -i "$tempAudio" -c:v libx264 -preset ultrafast -crf 28 -c:a aac -b:a 128k "$finalPath" -y';
-        }
+          task.statusText = 'Menghubungkan Server Video...';
+          notifyListeners();
 
-        bool success = await _dlService.executeFFmpeg(
-          command,
-          totalDurationMs: task.totalDurationMs,
-          onProgress: (p, details) {
-            String titleText = task.videoFormat == 'mp4'
-                ? 'Konversi ke MP4'
-                : 'Menggabungkan Video (MKV)';
-            _updateProgress(task, 0.7 + (p * 0.3), titleText, details);
-          },
-        );
+          MuxedStreamInfo muxedStream;
+          try {
+            muxedStream = manifest.muxed.firstWhere(
+              (s) => s.qualityLabel == task.qualityLabel,
+            );
+          } catch (_) {
+            muxedStream = manifest.muxed.sortByVideoQuality().last;
+          }
 
-        await _dlService.cleanUpTempFiles([tempVideo, tempAudio]);
-        if (!success) throw Exception('Gagal memproses Video dengan FFmpeg');
-      } else {
-        task.statusText = 'Menghubungkan Server Video...';
-        notifyListeners();
-
-        MuxedStreamInfo muxedStream;
-        try {
-          muxedStream = manifest.muxed.firstWhere(
-            (s) => s.qualityLabel == task.qualityLabel,
+          var stream = yt.videos.streamsClient.get(muxedStream);
+          String tempFile = await _dlService.downloadFromStream(
+            stream,
+            'temp_muxed_${task.id}.mp4',
+            muxedStream.size.totalBytes,
+            onProgress: (p, details) =>
+                _updateProgress(task, p, 'Mengunduh Video', details),
           );
-        } catch (_) {
-          muxedStream = manifest.muxed.sortByVideoQuality().last;
+
+          File(tempFile).copySync(finalPath);
+          await _dlService.cleanUpTempFiles([tempFile]);
         }
+        yt.close();
+      } else {
+        // --- 2. JALUR TIKTOK / FB / IG / DIRECT LINK ---
 
-        var stream = yt.videos.streamsClient.get(muxedStream);
-        String tempFile = await _dlService.downloadFromStream(
-          stream,
-          'temp_muxed_${task.id}.mp4',
-          muxedStream.size.totalBytes,
-          onProgress: (p, details) =>
-              _updateProgress(task, p, 'Mengunduh Video', details),
-        );
+        // ========================================================
+        // FITUR SAKTI: JADIKAN GAMBAR TIKTOK MENJADI VIDEO MP4
+        // ========================================================
+        if (task.videoFormat == 'tiktok_slideshow') {
+          task.statusText = 'Mengunduh Komponen...';
+          notifyListeners();
 
-        File(tempFile).copySync(finalPath);
-        await _dlService.cleanUpTempFiles([tempFile]);
+          // 1. Download Gambar Cover
+          String tempImg = await _dlService.downloadFromUrl(
+            task.thumbnail,
+            'temp_img_${task.id}.jpg',
+            onProgress: (p, details) =>
+                _updateProgress(task, p * 0.3, 'Mengunduh Gambar', details),
+          );
+
+          // 2. Download Audio
+          String tempAud = await _dlService.downloadFromUrl(
+            task.videoUrl,
+            'temp_aud_${task.id}.mp3',
+            onProgress: (p, details) => _updateProgress(
+              task,
+              0.3 + (p * 0.3),
+              'Mengunduh Audio',
+              details,
+            ),
+          );
+
+          task.status = TaskStatus.processing;
+          task.statusText = 'Muxing Gambar ke MP4...';
+          notifyListeners();
+
+          // ========================================================
+          // PERBAIKAN COMMAND FFMPEG: ANTI TERSEDAK + ANTI GANJIL
+          // ========================================================
+          final String finalSlidePath = '${task.saveDirectory}/$cleanTitle.mp4';
+
+          // Tambahan: -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2"
+          // Fungsi ini memaksa lebar (iw) dan tinggi (ih) menjadi bilangan genap
+          // dengan cara memotong sisa desimalnya, jadi FFmpeg (libx264) nggak bakal ngambek lagi!
+
+          final command =
+              '-loop 1 -framerate 2 -i "$tempImg" -i "$tempAud" -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -c:v libx264 -tune stillimage -c:a aac -b:a 128k -pix_fmt yuv420p -shortest "$finalSlidePath" -y';
+
+          bool success = await _dlService.executeFFmpeg(
+            command,
+            totalDurationMs: 30000,
+            onProgress: (p, details) => _updateProgress(
+              task,
+              0.6 + (p * 0.4),
+              'Muxing ke MP4',
+              'Tunggu sebentar...',
+            ),
+          );
+
+          await _dlService.cleanUpTempFiles([tempImg, tempAud]);
+          if (!success) throw Exception('Gagal membuat Video MP4 dari gambar.');
+
+          await _dlService.scanFile(finalSlidePath);
+        }
+        // ========================================================
+        // JIKA BUKAN SLIDESHOW (DOWNLOAD VIDEO BIASA/MP3/JPG)
+        // ========================================================
+        else {
+          task.statusText = 'Menghubungkan ke Server...';
+          notifyListeners();
+
+          // Perbaiki penamaan ekstensi kalau formatnya jpg
+          final String extFix = task.videoFormat == 'jpg' ? 'jpg' : ext;
+          final String finalNormalPath =
+              '${task.saveDirectory}/$cleanTitle.$extFix';
+
+          String tempFile = await _dlService.downloadFromUrl(
+            task.videoUrl,
+            'temp_direct_${task.id}.$extFix',
+            onProgress: (p, details) =>
+                _updateProgress(task, p, 'Mengunduh File', details),
+          );
+
+          File(tempFile).copySync(finalNormalPath);
+          await _dlService.cleanUpTempFiles([tempFile]);
+
+          await _dlService.scanFile(finalNormalPath);
+        }
       }
 
+      // --- FINALISASI SUKSES (UNIVERSAL) ---
       task.status = TaskStatus.success;
       task.progress = 1.0;
       task.statusText = 'Selesai diunduh!';
@@ -215,8 +319,6 @@ class QueueProvider extends ChangeNotifier {
         isError: true,
       );
       notifyListeners();
-    } finally {
-      yt.close();
     }
   }
 

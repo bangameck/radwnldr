@@ -106,7 +106,7 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
                   title: const Text(
-                    'Video Folder',
+                    'YouTube Video Folder',
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                   subtitle: Text(
@@ -115,7 +115,8 @@ class SettingsScreen extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   trailing: const Icon(Icons.edit_outlined),
-                  onTap: () => provider.pickFolder(isVideo: true),
+                  onTap: () =>
+                      provider.pickFolder(type: 'video'), // PERBAIKAN DI SINI
                 ),
                 Divider(
                   height: 1,
@@ -135,7 +136,7 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
                   title: const Text(
-                    'Audio Folder',
+                    'Audio Folder (All)',
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                   subtitle: Text(
@@ -144,8 +145,43 @@ class SettingsScreen extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   trailing: const Icon(Icons.edit_outlined),
-                  onTap: () => provider.pickFolder(isVideo: false),
+                  onTap: () =>
+                      provider.pickFolder(type: 'audio'), // PERBAIKAN DI SINI
                 ),
+                Divider(
+                  height: 1,
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                ),
+
+                // --- MENU FOLDER BARU UNTUK TIKTOK/IG ---
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  leading: const CircleAvatar(
+                    backgroundColor: Colors.pinkAccent,
+                    child: Icon(
+                      Icons.photo_library_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  title: const Text(
+                    'Social Folder (TikTok/IG)',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    provider.socialPath,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: const Icon(Icons.edit_outlined),
+                  onTap: () => provider.pickFolder(
+                    type: 'social',
+                  ), // MENGGUNAKAN TYPE SOCIAL
+                ),
+
                 Divider(
                   height: 1,
                   color: colorScheme.outlineVariant.withValues(alpha: 0.5),
@@ -164,7 +200,7 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
                   title: const Text(
-                    'Clear Cache',
+                    'Clear Temp Cache',
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                   subtitle: Text(
@@ -185,7 +221,7 @@ class SettingsScreen extends StatelessWidget {
                       provider.clearCache();
                       AlertPremium.showSuccess(
                         context,
-                        'Cache berhasil dibersihkan!',
+                        'Cache *temp* berhasil dibersihkan!',
                       );
                     },
                     child: const Text('Clean'),

@@ -1,7 +1,6 @@
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 class YoutubeService {
-  // Inisialisasi client
   final YoutubeExplode _yt = YoutubeExplode();
 
   /// 1. Fetch Metadata (Judul, Thumbnail, Durasi, Author)
@@ -15,18 +14,11 @@ class YoutubeService {
   }
 
   /// 2. Fetch Stream Manifest & Logic Filter
-  /// Mengembalikan Map berisi kategori stream yang sudah dipisah
   Future<Map<String, List<dynamic>>> getStreamManifest(VideoId videoId) async {
     try {
       var manifest = await _yt.videos.streamsClient.getManifest(videoId);
-
-      // Muxed: Video + Audio gabung (Maksimal biasanya 720p)
       var muxedStreams = manifest.muxed.sortByVideoQuality().toList();
-
-      // Adaptive / Video Only: Resolusi tinggi (1080p, 2K, 4K) TANPA AUDIO
       var videoOnlyStreams = manifest.videoOnly.sortByVideoQuality().toList();
-
-      // Audio Only: Untuk MP3 / Muxing FFmpeg nanti
       var audioOnlyStreams = manifest.audioOnly.sortByBitrate().toList();
 
       return {
@@ -36,6 +28,18 @@ class YoutubeService {
       };
     } catch (e) {
       throw Exception('Gagal mengambil daftar resolusi.');
+    }
+  }
+
+  /// 3. SEARCH VIDEO (FITUR BARU v1.2.0)
+  /// Mengembalikan list video hasil pencarian berdasarkan kata kunci
+  Future<List<Video>> searchVideos(String query) async {
+    try {
+      // Ambil 15 hasil pencarian teratas
+      var searchList = await _yt.search.search(query);
+      return searchList.take(15).toList();
+    } catch (e) {
+      throw Exception('Gagal mencari video. Periksa koneksi internet Anda.');
     }
   }
 

@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../widgets/app_drawer.dart'; // <--- KITA AKAN AMBIL FUNGSI DARI SINI
 import 'youtube_screen.dart';
+import 'tiktok_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -425,9 +426,19 @@ class _HomeScreenState extends State<HomeScreen> {
               context: context,
               title: 'TikTok',
               icon: FontAwesomeIcons.tiktok,
-              color: const Color(0xFF000000),
-              isAvailable: false,
-              onTap: () {},
+              color: const Color(
+                0xFFfe0979,
+              ), // Saya ganti warna Pink TikTok biar makin kece!
+              isAvailable: true, // <--- UBAH JADI TRUE WAK!
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const TiktokScreen(), // <--- ARAHKAN KE SCREEN TIKTOK
+                  ),
+                );
+              },
             ),
             _buildActionCard(
               context: context,

@@ -7,9 +7,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_new/return_code.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:http/http.dart' as http; // <--- TAMBAHAN UNTUK TIKTOK/IG
 
 class DownloadService {
-  // KITA UBAH NAMA CHANNEL MENJADI NATIVE BRIDGE
   static const _channel = MethodChannel('com.radevanka.radwnldr/native_bridge');
 
   Future<bool> requestStoragePermission() async {
@@ -36,7 +36,6 @@ class DownloadService {
     return true;
   }
 
-  // --- KONTROL NATIVE KOTLIN ---
   Future<void> scanFile(String path) async {
     if (Platform.isAndroid) {
       try {
@@ -48,12 +47,9 @@ class DownloadService {
   }
 
   Future<void> openFolder(String path) async {
-    // <--- Tambahkan parameter String path
     if (Platform.isAndroid) {
       try {
-        await _channel.invokeMethod('openFolder', {
-          'path': path,
-        }); // <--- Kirim path ke Kotlin
+        await _channel.invokeMethod('openFolder', {'path': path});
       } catch (e) {
         debugPrint("[CCTV] Open Folder Error: $e");
       }
@@ -76,7 +72,6 @@ class DownloadService {
     }
   }
 
-  // --- ALAT BANTU ---
   String _formatBytes(int bytes) {
     if (bytes <= 0) return "0 B";
     const suffixes = ["B", "KB", "MB", "GB", "TB"];
@@ -100,14 +95,14 @@ class DownloadService {
     }
   }
 
-  // --- DOWNLOAD NATIVE STREAM ---
+  // --- DOWNLOAD DARI STREAM YOUTUBE (YOUTUBE EXPLODE) ---
   Future<String> downloadFromStream(
     Stream<List<int>> stream,
     String fileName,
     int totalBytes, {
     Function(double, String)? onProgress,
   }) async {
-    await _acquireWakeLock(); // Kunci CPU saat Download
+    await _acquireWakeLock();
 
     final tempDir = await getTemporaryDirectory();
     final savePath = '${tempDir.path}/$fileName';
@@ -123,7 +118,6 @@ class DownloadService {
       (chunk) {
         output.add(chunk);
         downloadedBytes += chunk.length;
-
         DateTime now = DateTime.now();
         Duration diff = now.difference(lastUpdateTime);
 
@@ -146,12 +140,12 @@ class DownloadService {
       },
       onDone: () async {
         await output.close();
-        await _releaseWakeLock(); // Lepas kunci
+        await _releaseWakeLock();
         completer.complete(savePath);
       },
       onError: (e) async {
         await output.close();
-        await _releaseWakeLock(); // Lepas kunci
+        await _releaseWakeLock();
         completer.completeError(e);
       },
       cancelOnError: true,
@@ -160,14 +154,82 @@ class DownloadService {
     return completer.future;
   }
 
-  // --- FFMPEG ENGINE ---
+  // --- DOWNLOAD DARI URL LANGSUNG (TIKTOK / IG / FB) ---
+  Future<String> downloadFromUrl(
+    String url,
+    String fileName, {
+    Function(double, String)? onProgress,
+  }) async {
+    await _acquireWakeLock();
+
+    final tempDir = await getTemporaryDirectory();
+    final savePath = '${tempDir.path}/$fileName';
+    final file = File(savePath);
+    final output = file.openWrite();
+
+    int downloadedBytes = 0;
+    int lastUpdateBytes = 0;
+    DateTime lastUpdateTime = DateTime.now();
+    final completer = Completer<String>();
+
+    try {
+      final request = http.Request('GET', Uri.parse(url));
+      final response = await http.Client().send(request);
+      final totalBytes = response.contentLength ?? 0;
+
+      response.stream.listen(
+        (chunk) {
+          output.add(chunk);
+          downloadedBytes += chunk.length;
+          DateTime now = DateTime.now();
+          Duration diff = now.difference(lastUpdateTime);
+
+          if (diff.inMilliseconds >= 500 || downloadedBytes == totalBytes) {
+            double speedBps =
+                (downloadedBytes - lastUpdateBytes) /
+                (diff.inMilliseconds / 1000.0);
+            String speedText = '${_formatBytes(speedBps.toInt())}/s';
+            String sizeText =
+                '${_formatBytes(downloadedBytes)} / ${_formatBytes(totalBytes)}';
+            double percent = totalBytes > 0
+                ? (downloadedBytes / totalBytes)
+                : 0.0;
+
+            if (onProgress != null) {
+              onProgress(percent, "$sizeText • $speedText");
+            }
+
+            lastUpdateTime = now;
+            lastUpdateBytes = downloadedBytes;
+          }
+        },
+        onDone: () async {
+          await output.close();
+          await _releaseWakeLock();
+          completer.complete(savePath);
+        },
+        onError: (e) async {
+          await output.close();
+          await _releaseWakeLock();
+          completer.completeError(e);
+        },
+        cancelOnError: true,
+      );
+    } catch (e) {
+      await output.close();
+      await _releaseWakeLock();
+      completer.completeError(e);
+    }
+
+    return completer.future;
+  }
+
   Future<bool> executeFFmpeg(
     String command, {
     Function(double, String)? onProgress,
     required int totalDurationMs,
   }) async {
-    await _acquireWakeLock(); // KUNCI CPU SAAT FFMPEG BEKERJA KERAS!
-
+    await _acquireWakeLock();
     final completer = Completer<bool>();
     DateTime lastUpdateTime = DateTime.now();
 
@@ -175,7 +237,22 @@ class DownloadService {
       command,
       (session) async {
         final returnCode = await session.getReturnCode();
-        await _releaseWakeLock(); // LEPAS KUNCI SETELAH SELESAI
+        await _releaseWakeLock();
+
+        // ==========================================
+        // CCTV FFMPEG: DETEKSI ERROR LENGKAP
+        // ==========================================
+        if (!ReturnCode.isSuccess(returnCode)) {
+          final failStackTrace = await session.getFailStackTrace();
+          final output = await session.getOutput();
+          debugPrint("\n=== [CCTV FFMPEG ERROR] ===");
+          debugPrint("Return Code: $returnCode");
+          debugPrint("Output Log: $output");
+          debugPrint("Stack Trace: $failStackTrace");
+          debugPrint("===========================\n");
+        }
+        // ==========================================
+
         completer.complete(ReturnCode.isSuccess(returnCode));
       },
       null,
@@ -189,11 +266,9 @@ class DownloadService {
           int timeInMs = statistics.getTime();
           double percent = (timeInMs / totalDurationMs);
           double finalPercent = min(percent, 1.0);
-
           String timeStr =
               "${_formatDuration(timeInMs)} / ${_formatDuration(totalDurationMs)}";
           onProgress(finalPercent, timeStr);
-
           lastUpdateTime = now;
         }
       },

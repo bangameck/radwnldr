@@ -25,8 +25,14 @@ class _YoutubeScreenState extends State<YoutubeScreen>
   final DownloadService _dlService = DownloadService();
 
   bool _isLoading = false;
+
+  // State untuk Mode 1 (Hasil Paste Link)
   Video? _videoMetadata;
   Map<String, List<dynamic>>? _streams;
+
+  // State untuk Mode 2 (Hasil Pencarian / Search)
+  List<Video> _searchResults = [];
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -59,23 +65,65 @@ class _YoutubeScreenState extends State<YoutubeScreen>
         setState(() {
           _urlController.text = text;
         });
-        _analyzeVideo();
+        _processInput(); // Auto analisa kalau ada link di clipboard
       }
     }
   }
 
-  Future<void> _analyzeVideo() async {
-    if (_urlController.text.isEmpty) return;
+  // --- LOGIKA CERDAS: DETEKSI LINK vs KATA KUNCI ---
+  void _processInput() {
+    final input = _urlController.text.trim();
+    if (input.isEmpty) return;
 
+    if (input.contains('youtube.com') || input.contains('youtu.be')) {
+      // Jika input adalah Link (URL)
+      setState(() => _searchResults.clear()); // Bersihkan hasil search lama
+      _analyzeVideo(input);
+    } else {
+      // Jika input adalah kata pencarian (Search Query)
+      setState(() {
+        _videoMetadata = null; // Bersihkan preview link lama
+        _streams = null;
+      });
+      _searchVideoQuery(input);
+    }
+  }
+
+  // --- MODE PENCARIAN (SEARCH) ---
+  Future<void> _searchVideoQuery(String query) async {
     setState(() {
       _isLoading = true;
+      _isSearching = true;
+      _searchResults.clear();
+    });
+
+    try {
+      FocusScope.of(context).unfocus();
+      var results = await _ytService.searchVideos(query);
+      if (!mounted) return;
+      setState(() {
+        _searchResults = results;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      AlertPremium.showError(context, e.toString());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // --- MODE EKSTRAKSI (LINK) ---
+  Future<void> _analyzeVideo(String url) async {
+    setState(() {
+      _isLoading = true;
+      _isSearching = false;
       _videoMetadata = null;
       _streams = null;
     });
 
     try {
       FocusScope.of(context).unfocus();
-      var video = await _ytService.getVideoMetadata(_urlController.text);
+      var video = await _ytService.getVideoMetadata(url);
       var streams = await _ytService.getStreamManifest(video.id);
 
       if (!mounted) return;
@@ -105,7 +153,7 @@ class _YoutubeScreenState extends State<YoutubeScreen>
     }
   }
 
-  // --- DIALOG PEMILIHAN FORMAT (PREMIUM) ---
+  // --- DIALOG PEMILIHAN FORMAT ---
   void _showFormatDialog(dynamic streamInfo) {
     showDialog(
       context: context,
@@ -242,7 +290,8 @@ class _YoutubeScreenState extends State<YoutubeScreen>
 
     final task = DownloadTask(
       id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
-      videoUrl: _urlController.text,
+      videoUrl:
+          _videoMetadata!.url, // PENTING: Gunakan URL dari metadata yang aktif
       title: _videoMetadata!.title,
       thumbnail: _videoMetadata!.thumbnails.highResUrl,
       qualityLabel: streamInfo.qualityLabel,
@@ -256,9 +305,16 @@ class _YoutubeScreenState extends State<YoutubeScreen>
 
     Provider.of<QueueProvider>(context, listen: false).addTask(task);
     AlertPremium.showSuccess(context, 'Masuk Antrian:\n${task.title}');
+
+    // Opsional: Setelah download di-klik, hapus hasil pencarian biar UI bersih kembali ke antrian
+    setState(() {
+      _searchResults.clear();
+      _isSearching = false;
+      _urlController.clear();
+    });
   }
 
-  // --- BOTTOM SHEET PREMIUM (FULL CODE) ---
+  // --- BOTTOM SHEET RESOLUSI ---
   void _showResolutionBottomSheet() {
     if (_streams == null) return;
 
@@ -449,7 +505,7 @@ class _YoutubeScreenState extends State<YoutubeScreen>
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(
-          'RaDwnldr',
+          'YouTube Downloader',
           style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.2),
         ),
         centerTitle: true,
@@ -477,19 +533,39 @@ class _YoutubeScreenState extends State<YoutubeScreen>
               child: Row(
                 children: [
                   const SizedBox(width: 15),
-                  Icon(Icons.link_rounded, color: colorScheme.primary),
+                  Icon(
+                    Icons.search_rounded,
+                    color: colorScheme.primary,
+                  ), // Ganti ikon jadi kaca pembesar
                   const SizedBox(width: 10),
                   Expanded(
                     child: TextField(
                       controller: _urlController,
                       decoration: const InputDecoration(
-                        hintText: 'Paste link YouTube di sini...',
+                        hintText: 'Cari judul atau paste link...',
                         border: InputBorder.none,
                       ),
+                      onSubmitted: (_) =>
+                          _processInput(), // Bisa tekan enter di keyboard hp
                     ),
                   ),
+                  if (_urlController.text.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        size: 20,
+                        color: Colors.grey,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _urlController.clear();
+                          _searchResults.clear();
+                          _videoMetadata = null;
+                        });
+                      },
+                    ),
                   GestureDetector(
-                    onTap: _isLoading ? null : _analyzeVideo,
+                    onTap: _isLoading ? null : _processInput,
                     child: Container(
                       margin: const EdgeInsets.all(6),
                       padding: const EdgeInsets.all(12),
@@ -538,8 +614,165 @@ class _YoutubeScreenState extends State<YoutubeScreen>
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.all(16),
               children: [
-                // --- CINEMATIC METADATA CARD ---
-                if (_videoMetadata != null && !_isLoading) ...[
+                // --- SHIMMER LOADING ---
+                if (_isLoading) ...[
+                  Shimmer.fromColors(
+                    baseColor: colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.4,
+                    ),
+                    highlightColor: colorScheme.surfaceContainerHighest,
+                    child: Container(
+                      width: double.infinity,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  Shimmer.fromColors(
+                    baseColor: colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.4,
+                    ),
+                    highlightColor: colorScheme.surfaceContainerHighest,
+                    child: Container(
+                      width: double.infinity,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                ],
+
+                // --- HASIL PENCARIAN (SEARCH RESULTS) ---
+                if (_searchResults.isNotEmpty && !_isLoading) ...[
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.youtube_searched_for_rounded,
+                        size: 20,
+                        color: colorScheme.primary,
+                      ),
+                      const SizedBox(width: 10),
+                      const Text(
+                        'Hasil Pencarian',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 15),
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _searchResults.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final video = _searchResults[index];
+                      return InkWell(
+                        onTap: () {
+                          // Kalau di-klik, langsung proses seperti paste link
+                          _urlController.text = video.url;
+                          _processInput();
+                        },
+                        borderRadius: BorderRadius.circular(15),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerHighest
+                                .withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(15),
+                            border: Border.all(
+                              color: colorScheme.outlineVariant.withValues(
+                                alpha: 0.3,
+                              ),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: Image.network(
+                                  video.thumbnails.mediumResUrl,
+                                  width: 100,
+                                  height: 60,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (c, e, s) => Container(
+                                    width: 100,
+                                    height: 60,
+                                    color: Colors.grey.shade300,
+                                    child: const Icon(
+                                      Icons.video_file,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      video.title,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.person_rounded,
+                                          size: 12,
+                                          color: colorScheme.primary,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Expanded(
+                                          child: Text(
+                                            video.author,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: colorScheme.primary,
+                                            ),
+                                          ),
+                                        ),
+                                        Text(
+                                          _formatVideoDuration(video.duration),
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.grey,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 30),
+                ],
+
+                // --- CINEMATIC METADATA CARD (HASIL PASTE LINK/KLIK PENCARIAN) ---
+                if (_videoMetadata != null && !_isLoading && !_isSearching) ...[
                   Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
@@ -557,14 +790,12 @@ class _YoutubeScreenState extends State<YoutubeScreen>
                       child: Stack(
                         alignment: Alignment.bottomCenter,
                         children: [
-                          // Background Image
                           Image.network(
                             _videoMetadata!.thumbnails.highResUrl,
                             width: double.infinity,
                             height: 250,
                             fit: BoxFit.cover,
                           ),
-                          // Dark Gradient Overlay
                           Container(
                             height: 150,
                             decoration: BoxDecoration(
@@ -578,7 +809,6 @@ class _YoutubeScreenState extends State<YoutubeScreen>
                               ),
                             ),
                           ),
-                          // Text Content
                           Padding(
                             padding: const EdgeInsets.all(20.0),
                             child: Column(
@@ -675,274 +905,292 @@ class _YoutubeScreenState extends State<YoutubeScreen>
                   const SizedBox(height: 30),
                 ],
 
-                // --- SHIMMER LOADING ---
-                if (_isLoading) ...[
-                  Shimmer.fromColors(
-                    baseColor: colorScheme.surfaceContainerHighest.withValues(
-                      alpha: 0.4,
-                    ),
-                    highlightColor: colorScheme.surfaceContainerHighest,
-                    child: Container(
-                      width: double.infinity,
-                      height: 250,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(25),
+                // --- SMART QUEUE SYSTEM (Sembunyikan saat lagi mode pencarian biar layar gak penuh) ---
+                if (!_isSearching) ...[
+                  const Row(
+                    children: [
+                      Icon(
+                        Icons.format_list_bulleted_rounded,
+                        size: 20,
+                        color: Colors.grey,
                       ),
-                    ),
+                      SizedBox(width: 10),
+                      Text(
+                        'Antrian Unduhan',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 30),
-                ],
+                  const SizedBox(height: 15),
 
-                // --- SMART QUEUE SYSTEM ---
-                const Row(
-                  children: [
-                    Icon(
-                      Icons.format_list_bulleted_rounded,
-                      size: 20,
-                      color: Colors.grey,
-                    ),
-                    SizedBox(width: 10),
-                    Text(
-                      'Antrian Unduhan',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 15),
-
-                Consumer<QueueProvider>(
-                  builder: (context, queueProvider, child) {
-                    if (queueProvider.queue.isEmpty) {
-                      return Container(
-                        padding: const EdgeInsets.all(30),
-                        decoration: BoxDecoration(
-                          color: colorScheme.surfaceContainerHighest.withValues(
-                            alpha: 0.2,
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: colorScheme.outlineVariant.withValues(
-                              alpha: 0.3,
-                            ),
-                            style: BorderStyle.solid,
-                          ),
-                        ),
-                        child: const Center(
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.inbox_rounded,
-                                size: 40,
-                                color: Colors.grey,
-                              ),
-                              SizedBox(height: 10),
-                              Text(
-                                'Belum ada tugas...',
-                                style: TextStyle(
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
-
-                    // --- LOGIKA SMART SORTING ---
-                    final allTasks = queueProvider.queue;
-                    final activeTasks = allTasks
-                        .where(
-                          (t) =>
-                              t.status == TaskStatus.downloading ||
-                              t.status == TaskStatus.processing,
-                        )
-                        .toList();
-                    final waitingTasks = allTasks
-                        .where((t) => t.status == TaskStatus.waiting)
-                        .toList();
-                    final completedTasks = allTasks
-                        .where(
-                          (t) =>
-                              t.status == TaskStatus.success ||
-                              t.status == TaskStatus.error,
-                        )
-                        .toList()
-                        .reversed
-                        .toList();
-
-                    final displayQueue = [
-                      ...activeTasks,
-                      ...waitingTasks,
-                      ...completedTasks,
-                    ];
-
-                    return ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: displayQueue.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final task = displayQueue[index];
-                        final isActive =
-                            task.status == TaskStatus.downloading ||
-                            task.status == TaskStatus.processing;
-                        final isDone = task.status == TaskStatus.success;
-                        final isError = task.status == TaskStatus.error;
-
+                  Consumer<QueueProvider>(
+                    builder: (context, queueProvider, child) {
+                      if (queueProvider.queue.isEmpty) {
                         return Container(
+                          padding: const EdgeInsets.all(30),
                           decoration: BoxDecoration(
-                            color: isActive
-                                ? colorScheme.primaryContainer.withValues(
-                                    alpha: 0.1,
-                                  )
-                                : colorScheme.surface,
+                            color: colorScheme.surfaceContainerHighest
+                                .withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: isActive
-                                  ? colorScheme.primary.withValues(alpha: 0.5)
-                                  : colorScheme.outlineVariant.withValues(
-                                      alpha: 0.3,
-                                    ),
-                              width: isActive ? 1.5 : 1.0,
+                              color: colorScheme.outlineVariant.withValues(
+                                alpha: 0.3,
+                              ),
+                              style: BorderStyle.solid,
                             ),
-                            boxShadow: isActive
-                                ? [
-                                    BoxShadow(
-                                      color: colorScheme.primary.withValues(
-                                        alpha: 0.1,
-                                      ),
-                                      blurRadius: 10,
-                                      spreadRadius: 1,
-                                    ),
-                                  ]
-                                : [],
                           ),
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            children: [
-                              // Thumbnail dengan Status Overlay
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: SizedBox(
-                                  width: 80,
-                                  height: 60,
-                                  child: Stack(
-                                    fit: StackFit.expand,
-                                    children: [
-                                      Image.network(
-                                        task.thumbnail,
-                                        fit: BoxFit.cover,
-                                      ),
-                                      if (isDone)
-                                        Container(
-                                          color: Colors.green.withValues(
-                                            alpha: 0.7,
-                                          ),
-                                          child: const Icon(
-                                            Icons.check_circle,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      if (isError)
-                                        Container(
-                                          color: Colors.red.withValues(
-                                            alpha: 0.7,
-                                          ),
-                                          child: const Icon(
-                                            Icons.error,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      if (!isActive && !isDone && !isError)
-                                        Container(
-                                          color: Colors.black45,
-                                          child: const Icon(
-                                            Icons.schedule,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                    ],
+                          child: const Center(
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.inbox_rounded,
+                                  size: 40,
+                                  color: Colors.grey,
+                                ),
+                                SizedBox(height: 10),
+                                Text(
+                                  'Belum ada tugas...',
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
+                      // LOGIKA SMART SORTING
+                      final allTasks = queueProvider.queue;
+                      final activeTasks = allTasks
+                          .where(
+                            (t) =>
+                                t.status == TaskStatus.downloading ||
+                                t.status == TaskStatus.processing,
+                          )
+                          .toList();
+                      final waitingTasks = allTasks
+                          .where((t) => t.status == TaskStatus.waiting)
+                          .toList();
+                      final completedTasks = allTasks
+                          .where(
+                            (t) =>
+                                t.status == TaskStatus.success ||
+                                t.status == TaskStatus.error,
+                          )
+                          .toList()
+                          .reversed
+                          .toList();
+                      final displayQueue = [
+                        ...activeTasks,
+                        ...waitingTasks,
+                        ...completedTasks,
+                      ];
+
+                      return ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: displayQueue.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final task = displayQueue[index];
+                          final isActive =
+                              task.status == TaskStatus.downloading ||
+                              task.status == TaskStatus.processing;
+                          final isDone = task.status == TaskStatus.success;
+                          final isError = task.status == TaskStatus.error;
+
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: isActive
+                                  ? colorScheme.primaryContainer.withValues(
+                                      alpha: 0.1,
+                                    )
+                                  : colorScheme.surface,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: isActive
+                                    ? colorScheme.primary.withValues(alpha: 0.5)
+                                    : colorScheme.outlineVariant.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                width: isActive ? 1.5 : 1.0,
                               ),
-                              const SizedBox(width: 15),
-
-                              // Detail Teks & Progress
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      task.title,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                        color: isDone ? Colors.grey : null,
+                              boxShadow: isActive
+                                  ? [
+                                      BoxShadow(
+                                        color: colorScheme.primary.withValues(
+                                          alpha: 0.1,
+                                        ),
+                                        blurRadius: 10,
+                                        spreadRadius: 1,
                                       ),
+                                    ]
+                                  : [],
+                            ),
+                            padding: const EdgeInsets.all(12),
+                            child: Row(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: SizedBox(
+                                    width: 80,
+                                    height: 60,
+                                    child: Stack(
+                                      fit: StackFit.expand,
+                                      children: [
+                                        Image.network(
+                                          task.thumbnail,
+                                          fit: BoxFit.cover,
+                                        ),
+                                        if (isDone)
+                                          Container(
+                                            color: Colors.green.withValues(
+                                              alpha: 0.7,
+                                            ),
+                                            child: const Icon(
+                                              Icons.check_circle,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        if (isError)
+                                          Container(
+                                            color: Colors.red.withValues(
+                                              alpha: 0.7,
+                                            ),
+                                            child: const Icon(
+                                              Icons.error,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        if (!isActive && !isDone && !isError)
+                                          Container(
+                                            color: Colors.black45,
+                                            child: const Icon(
+                                              Icons.schedule,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                      ],
                                     ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      task.statusText,
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: isError
-                                            ? Colors.red
-                                            : Colors.grey,
-                                        height: 1.3,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-
-                                    // PROGRESS BAR (JIKA SEDANG JALAN)
-                                    if (isActive) ...[
-                                      const SizedBox(height: 8),
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(5),
-                                        child: LinearProgressIndicator(
-                                          value: task.progress,
-                                          backgroundColor: colorScheme.primary
-                                              .withValues(alpha: 0.1),
-                                          color:
-                                              task.status ==
-                                                  TaskStatus.processing
-                                              ? Colors.orange
-                                              : colorScheme.primary,
-                                          minHeight: 6,
+                                  ),
+                                ),
+                                const SizedBox(width: 15),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        task.title,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                          color: isDone ? Colors.grey : null,
                                         ),
                                       ),
-                                    ],
-
-                                    // ==========================================
-                                    // TOMBOL AKSI PREMIUM (MUNCUL KALAU SELESAI/GAGAL)
-                                    // ==========================================
-                                    if (isDone || isError) ...[
-                                      const SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          // Tombol Lihat Folder (Hanya Muncul Jika Sukses)
-                                          if (isDone)
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        task.statusText,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: isError
+                                              ? Colors.red
+                                              : Colors.grey,
+                                          height: 1.3,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      if (isActive) ...[
+                                        const SizedBox(height: 8),
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            5,
+                                          ),
+                                          child: LinearProgressIndicator(
+                                            value: task.progress,
+                                            backgroundColor: colorScheme.primary
+                                                .withValues(alpha: 0.1),
+                                            color:
+                                                task.status ==
+                                                    TaskStatus.processing
+                                                ? Colors.orange
+                                                : colorScheme.primary,
+                                            minHeight: 6,
+                                          ),
+                                        ),
+                                      ],
+                                      if (isDone || isError) ...[
+                                        const SizedBox(height: 10),
+                                        Row(
+                                          children: [
+                                            if (isDone)
+                                              InkWell(
+                                                onTap: () {
+                                                  final appProv =
+                                                      Provider.of<AppProvider>(
+                                                        context,
+                                                        listen: false,
+                                                      );
+                                                  queueProvider.openFolder(
+                                                    task.isAudio
+                                                        ? appProv.audioPath
+                                                        : appProv.videoPath,
+                                                  );
+                                                },
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 10,
+                                                        vertical: 6,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color: colorScheme.primary
+                                                        .withValues(alpha: 0.1),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          8,
+                                                        ),
+                                                  ),
+                                                  child: Row(
+                                                    children: [
+                                                      Icon(
+                                                        Icons
+                                                            .folder_open_rounded,
+                                                        size: 14,
+                                                        color:
+                                                            colorScheme.primary,
+                                                      ),
+                                                      const SizedBox(width: 5),
+                                                      Text(
+                                                        'Lihat Folder',
+                                                        style: TextStyle(
+                                                          fontSize: 11,
+                                                          color: colorScheme
+                                                              .primary,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            if (isDone)
+                                              const SizedBox(width: 10),
                                             InkWell(
-                                              onTap: () {
-                                                final appProv =
-                                                    Provider.of<AppProvider>(
-                                                      context,
-                                                      listen: false,
-                                                    );
-                                                queueProvider.openFolder(
-                                                  task.isAudio
-                                                      ? appProv.audioPath
-                                                      : appProv.videoPath,
-                                                );
-                                              },
+                                              onTap: () => queueProvider
+                                                  .removeTask(task.id),
                                               borderRadius:
                                                   BorderRadius.circular(8),
                                               child: Container(
@@ -952,26 +1200,26 @@ class _YoutubeScreenState extends State<YoutubeScreen>
                                                       vertical: 6,
                                                     ),
                                                 decoration: BoxDecoration(
-                                                  color: colorScheme.primary
-                                                      .withValues(alpha: 0.1),
+                                                  color: Colors.red.withValues(
+                                                    alpha: 0.1,
+                                                  ),
                                                   borderRadius:
                                                       BorderRadius.circular(8),
                                                 ),
-                                                child: Row(
+                                                child: const Row(
                                                   children: [
                                                     Icon(
-                                                      Icons.folder_open_rounded,
+                                                      Icons
+                                                          .delete_outline_rounded,
                                                       size: 14,
-                                                      color:
-                                                          colorScheme.primary,
+                                                      color: Colors.red,
                                                     ),
-                                                    const SizedBox(width: 5),
+                                                    SizedBox(width: 5),
                                                     Text(
-                                                      'Lihat Folder',
+                                                      'Hapus',
                                                       style: TextStyle(
                                                         fontSize: 11,
-                                                        color:
-                                                            colorScheme.primary,
+                                                        color: Colors.red,
                                                         fontWeight:
                                                             FontWeight.bold,
                                                       ),
@@ -980,63 +1228,20 @@ class _YoutubeScreenState extends State<YoutubeScreen>
                                                 ),
                                               ),
                                             ),
-                                          if (isDone) const SizedBox(width: 10),
-
-                                          // Tombol Hapus Riwayat (Muncul Jika Sukses / Gagal)
-                                          InkWell(
-                                            onTap: () => queueProvider
-                                                .removeTask(task.id),
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                            child: Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 10,
-                                                    vertical: 6,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.red.withValues(
-                                                  alpha: 0.1,
-                                                ),
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                              ),
-                                              child: const Row(
-                                                children: [
-                                                  Icon(
-                                                    Icons
-                                                        .delete_outline_rounded,
-                                                    size: 14,
-                                                    color: Colors.red,
-                                                  ),
-                                                  SizedBox(width: 5),
-                                                  Text(
-                                                    'Hapus',
-                                                    style: TextStyle(
-                                                      fontSize: 11,
-                                                      color: Colors.red,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                          ],
+                                        ),
+                                      ],
                                     ],
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ],
               ],
             ),
           ),

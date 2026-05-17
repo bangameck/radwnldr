@@ -8,8 +8,11 @@ class AppProvider extends ChangeNotifier {
   // --- Default Values ---
   bool _isDarkMode = true;
   Color _accentColor = emerald;
-  String _videoPath = '/storage/emulated/0/Movies/RaDwnldr';
-  String _audioPath = '/storage/emulated/0/Music/RaDwnldr';
+  String _videoPath = '/storage/emulated/0/Movies/RaDwnldr'; // YouTube Video
+  String _audioPath =
+      '/storage/emulated/0/Music/RaDwnldr'; // All Audio (YT/TikTok/IG)
+  String _socialPath =
+      '/storage/emulated/0/Pictures/RaDwnldr'; // Social Media (Video/Gambar)
 
   // --- Premium Colors ---
   static const Color emerald = Color(0xFF10B981);
@@ -22,6 +25,7 @@ class AppProvider extends ChangeNotifier {
   Color get accentColor => _accentColor;
   String get videoPath => _videoPath;
   String get audioPath => _audioPath;
+  String get socialPath => _socialPath;
 
   // --- Cache State ---
   String _cacheSize = "Menghitung...";
@@ -36,17 +40,16 @@ class AppProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _isDarkMode = prefs.getBool('isDarkMode') ?? true;
 
-    // PERBAIKAN: Menggunakan toARGB32() untuk kompatibilitas Flutter terbaru
     _accentColor = Color(prefs.getInt('accentColor') ?? emerald.toARGB32());
     _videoPath = prefs.getString('videoPath') ?? _videoPath;
     _audioPath = prefs.getString('audioPath') ?? _audioPath;
+    _socialPath = prefs.getString('socialPath') ?? _socialPath;
     notifyListeners();
 
-    // Hitung cache di background
     calculateCache();
   }
 
-  // 2. Ganti Tema (Light/Dark)
+  // 2. Ganti Tema
   Future<void> toggleTheme(bool value) async {
     _isDarkMode = value;
     final prefs = await SharedPreferences.getInstance();
@@ -58,33 +61,30 @@ class AppProvider extends ChangeNotifier {
   Future<void> changeAccent(Color color) async {
     _accentColor = color;
     final prefs = await SharedPreferences.getInstance();
-
-    // PERBAIKAN: Menggunakan toARGB32()
     await prefs.setInt('accentColor', color.toARGB32());
     notifyListeners();
   }
 
   // 4. Pilih Folder Penyimpanan
-  Future<void> pickFolder({required bool isVideo}) async {
+  Future<void> pickFolder({required String type}) async {
     String? path;
-
     try {
-      // Kita panggil langsung fungsinya (kompatibel dengan versi terbaru file_picker)
-      // Jika di VS Code masih ada garis merah, kamu bisa coba Restart VS Code kamu.
       path = await FilePicker.getDirectoryPath();
     } catch (e) {
-      // Fallback jika API platform tidak terbaca
       debugPrint("Error mengambil folder: $e");
     }
 
     if (path != null) {
       final prefs = await SharedPreferences.getInstance();
-      if (isVideo) {
+      if (type == 'video') {
         _videoPath = path;
         await prefs.setString('videoPath', path);
-      } else {
+      } else if (type == 'audio') {
         _audioPath = path;
         await prefs.setString('audioPath', path);
+      } else if (type == 'social') {
+        _socialPath = path;
+        await prefs.setString('socialPath', path);
       }
       notifyListeners();
     }
